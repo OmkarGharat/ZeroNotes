@@ -26,26 +26,29 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
 
   return (
     <Link to={`/edit/${note.id}`} className="block group">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 p-6 flex flex-col h-full">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-green-400 dark:hover:border-green-600 shadow-sm hover:shadow-lg transition-all duration-300 p-6 flex flex-col h-full relative overflow-hidden">
+        
+        <div className="absolute top-0 left-0 w-1 h-full bg-transparent group-hover:bg-green-500 transition-colors"></div>
+
         <div className="flex-grow">
           <div className="flex justify-between items-start">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors line-clamp-1">
               {note.title || 'Untitled Note'}
             </h3>
             <button
               onClick={handleDelete}
-              className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1 rounded-full opacity-0 group-hover:opacity-100"
+              className="text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 duration-200"
               aria-label="Delete note"
             >
               <TrashIcon className="h-5 w-5" />
             </button>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-            {snippet || 'No content yet...'}
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3 leading-relaxed">
+            {snippet || <span className="italic text-slate-400">No additional text</span>}
           </p>
         </div>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-auto">
-          Last updated: {new Date(note.updatedAt).toLocaleString()}
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between">
+          <span>{new Date(note.updatedAt).toLocaleDateString()}</span>
         </p>
       </div>
     </Link>

@@ -172,69 +172,86 @@ const EditorPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
+    <div className="flex flex-col h-full max-w-5xl mx-auto">
       {notification && (
-        <div className="fixed top-20 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-50 animate-fade-in-out">
+        <div className="fixed top-20 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg z-50 animate-fade-in-out font-medium">
           {notification}
         </div>
       )}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Note Title"
-          className="text-3xl font-bold bg-transparent border-none focus:ring-0 w-full md:w-auto flex-grow text-slate-900 dark:text-white placeholder-slate-400"
+          placeholder="Untitled Note"
+          className="text-3xl font-bold bg-transparent border-none focus:ring-0 p-0 w-full md:w-auto flex-grow text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none"
         />
-        <div className="flex items-center gap-2">
-            <button onClick={() => setIsAiModalOpen(true)} className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-all">
-                <SparklesIcon className="h-5 w-5" /> Ask Gemini
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button 
+              onClick={() => setIsAiModalOpen(true)} 
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-all text-sm"
+              title="Generate content with AI"
+            >
+                <SparklesIcon className="h-4 w-4" /> AI Assist
             </button>
+            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
             <button 
                 onClick={handleShare} 
                 disabled={isPublishing}
-                className="p-2 text-slate-500 hover:text-sky-500 transition-colors disabled:opacity-50" 
+                className="p-2 text-slate-500 hover:text-green-600 transition-colors disabled:opacity-50 hover:bg-green-50 rounded-lg" 
                 aria-label="Share note"
                 title={isPublishing ? "Publishing..." : "Share Public Link"}
             >
-                <ShareIcon className={`h-6 w-6 ${isPublishing ? 'animate-pulse text-sky-500' : ''}`} />
+                <ShareIcon className={`h-5 w-5 ${isPublishing ? 'animate-pulse text-green-500' : ''}`} />
             </button>
-            <button onClick={handleDownloadPdf} className="p-2 text-slate-500 hover:text-sky-500 transition-colors" aria-label="Download PDF"><DownloadIcon className="h-6 w-6" /></button>
+            <button 
+              onClick={handleDownloadPdf} 
+              className="p-2 text-slate-500 hover:text-green-600 transition-colors hover:bg-green-50 rounded-lg" 
+              aria-label="Download PDF"
+              title="Download as PDF"
+            >
+              <DownloadIcon className="h-5 w-5" />
+            </button>
+            <button 
+              onClick={handleSave} 
+              className="ml-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors text-sm"
+            >
+              Save
+            </button>
         </div>
       </div>
 
-      <div className="flex-grow bg-white dark:bg-slate-800 rounded-lg shadow-inner overflow-hidden min-h-[500px]">
+      <div className="flex-grow bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[500px] flex flex-col">
         <ReactQuill
           ref={quillRef}
           theme="snow"
           value={content}
           onChange={setContent}
           modules={modules}
-          className="h-full [&_.ql-container]:border-none [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-slate-200 [&_.ql-toolbar]:dark:border-slate-700"
+          className="flex-grow flex flex-col [&_.ql-container]:border-none [&_.ql-container]:flex-grow [&_.ql-editor]:text-lg [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-slate-200 [&_.ql-toolbar]:dark:border-slate-700 [&_.ql-toolbar]:bg-slate-50 [&_.ql-toolbar]:dark:bg-slate-900"
         />
       </div>
 
-      <div className="mt-4 flex justify-end">
-          <button onClick={handleSave} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors">
-              Save Note
-          </button>
-      </div>
-
       {isAiModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg">
-                <h3 className="text-xl font-bold mb-4">Generate content with Gemini</h3>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-lg border border-slate-100 dark:border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                    <SparklesIcon className="h-5 w-5 text-emerald-500" />
+                    Ask Gemini
+                  </h3>
+                </div>
                 <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="e.g., Write a poem about React..."
-                    className="w-full h-32 p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    placeholder="e.g., Draft a meeting agenda for..."
+                    className="w-full h-32 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
                     aria-label="AI Prompt"
                 />
-                <div className="mt-4 flex justify-end gap-2">
-                    <button onClick={() => setIsAiModalOpen(false)} className="py-2 px-4 rounded-lg bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">Cancel</button>
-                    <button onClick={handleGenerateAiContent} disabled={isGenerating} className="py-2 px-4 rounded-lg bg-sky-500 hover:bg-sky-600 text-white disabled:bg-sky-300 transition-colors">
-                        {isGenerating ? 'Generating...' : 'Generate'}
+                <div className="mt-4 flex justify-end gap-3">
+                    <button onClick={() => setIsAiModalOpen(false)} className="py-2 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors">Cancel</button>
+                    <button onClick={handleGenerateAiContent} disabled={isGenerating} className="py-2 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white disabled:bg-emerald-300 transition-colors font-medium">
+                        {isGenerating ? 'Generating...' : 'Generate Content'}
                     </button>
                 </div>
             </div>

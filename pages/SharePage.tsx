@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 import { fetchNoteFromCloud } from '../services/firebaseService';
-import { DownloadIcon } from '../components/Icons';
+import { DownloadIcon, LogoIcon } from '../components/Icons';
 
 interface SharedNote {
     title: string;
@@ -15,7 +15,6 @@ interface SharedNote {
 }
 
 const SharePage: React.FC = () => {
-    // The slug is passed via the URL path now: domain/#/slug
     const { slug } = useParams<{ slug: string }>();
     
     const [note, setNote] = useState<SharedNote | null>(null);
@@ -36,7 +35,7 @@ const SharePage: React.FC = () => {
             if (data) {
                 setNote(data);
             } else {
-                setError("Note not found. It may have been deleted or the link is incorrect.");
+                setError("Note not found.");
             }
             setLoading(false);
         };
@@ -55,9 +54,8 @@ const SharePage: React.FC = () => {
 
         html2canvas(editor, {
             scale: 2,
-            backgroundColor: '#ffffff', // Use a white background for PDF consistency
+            backgroundColor: '#ffffff', 
             onclone: (clonedDoc) => {
-                 // Force a black text color on the root editor element for readability on the PDF.
                 const editorEl = clonedDoc.querySelector('.ql-editor') as HTMLElement;
                 if (editorEl) {
                     editorEl.style.color = '#000';
@@ -98,15 +96,27 @@ const SharePage: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="text-center p-10 text-slate-500">Loading note...</div>;
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[50vh]">
+             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mb-4"></div>
+             <p className="text-slate-500">Loading note...</p>
+          </div>
+        );
     }
 
     if (error) {
         return (
-            <div className="max-w-2xl mx-auto mt-10 text-center p-10 bg-red-50 dark:bg-slate-800 border border-red-200 dark:border-slate-700 rounded-lg">
-                <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Note Not Found</h2>
-                <p className="text-slate-600 dark:text-slate-400 mb-6">{error}</p>
-                <Link to="/" className="text-sky-500 hover:underline">Go to Home</Link>
+            <div className="max-w-xl mx-auto mt-20 text-center p-10 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="inline-block p-4 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Note Unavailable</h2>
+                <p className="text-slate-500 mb-8">{error}</p>
+                <Link to="/" className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+                  Go to Home
+                </Link>
             </div>
         );
     }
@@ -115,29 +125,32 @@ const SharePage: React.FC = () => {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-4xl font-bold text-slate-900 dark:text-white">{note.title || 'Untitled Note'}</h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <h1 className="text-4xl font-bold text-slate-900 dark:text-white leading-tight">{note.title || 'Untitled Note'}</h1>
                 <button
                     onClick={handleDownloadPdf}
                     disabled={isDownloading}
-                    className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-300 disabled:bg-sky-300"
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 disabled:bg-green-300"
                 >
                     <DownloadIcon className="h-5 w-5" />
                     {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </button>
             </div>
 
-            <div ref={contentRef} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 select-text">
+            <div ref={contentRef} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 md:p-8 select-text min-h-[400px]">
                 <ReactQuill
                     value={note.content}
                     readOnly={true}
                     theme="bubble"
-                    className="[&_.ql-editor]:p-4"
+                    className="[&_.ql-editor]:p-0 [&_.ql-editor]:text-lg"
                 />
             </div>
             
-            <div className="mt-8 text-center">
-                 <Link to="/" className="text-sm text-slate-400 hover:text-sky-500">Create your own note with Gemini Notes</Link>
+            <div className="mt-12 text-center pb-10">
+                 <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-green-600 transition-colors">
+                    <LogoIcon className="h-5 w-5" />
+                    <span className="font-medium">Create your own note with ShareNote</span>
+                 </Link>
             </div>
         </div>
     );

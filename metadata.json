@@ -1,5 +1,5 @@
 {
-  "name": "Gemini Rich Notes",
-  "description": "A rich text note-taking application with AI-powered content generation, public sharing via links, and PDF export functionality. Store notes locally, format them with a powerful editor, and share your ideas with anyone.",
+  "name": "ShareNote",
+  "description": "A rich text note-taking application with AI-powered content generation. Store notes locally, format them with a powerful editor, and share your ideas with anyone via a public link.",
   "requestFramePermissions": []
 }
