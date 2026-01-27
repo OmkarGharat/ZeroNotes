@@ -9,6 +9,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React Quill theme -->
     <link href="https://cdn.jsdelivr.net/npm/react-quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
+    <!-- Highlight.js Theme (Atom One Dark) for Code Blocks -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" rel="stylesheet">
+    <!-- Highlight.js Library - Must be loaded before Quill initializes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
     <!-- Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,39 +77,65 @@
             }
         }
 
-        /* Zen Quill Editor Overrides */
+        /* --- Editor UI Improvements --- */
+
+        /* 1. Distinct Toolbar */
         .ql-toolbar.ql-snow {
             border: none !important;
-            padding: 12px 0 !important;
-            margin-bottom: 20px;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            background-color: #F9FAFB; /* Light gray background */
+            border-radius: 8px;
+            padding: 12px !important;
+            margin-bottom: 24px;
+            opacity: 1; /* Remove opacity so it's always clear */
         }
-        .ql-toolbar.ql-snow:hover {
-            opacity: 1;
-        }
+        
+        /* 2. Editor Container */
         .ql-container.ql-snow {
             border: none !important;
             font-family: 'Inter', sans-serif !important;
             font-size: 16px;
         }
+
+        /* 3. Editor Text Area */
         .ql-editor {
             padding: 0 !important;
-            line-height: 1.6;
-            font-size: 1.1rem;
+            line-height: 1.7;
+            font-size: 1.125rem; /* 18px */
+            min-height: 300px;
         }
         .ql-editor.ql-blank::before {
             color: #a0a0a0;
             font-style: normal;
             left: 0;
         }
-        
-        /* Dark mode overrides for Quill */
+
+        /* 4. Code Block Styling (Syntax Highlighting Support) */
+        .ql-snow .ql-editor pre.ql-syntax {
+            background-color: #282c34; /* Dark background for code */
+            color: #abb2bf;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 1.5em;
+            margin-bottom: 1.5em;
+            overflow-x: auto;
+        }
+
+        /* Dark mode overrides */
         @media (prefers-color-scheme: dark) {
+            .ql-toolbar.ql-snow {
+                background-color: #2F2F2F; /* Lighter charcoal for toolbar */
+            }
             .ql-stroke { stroke: #ECECEC !important; }
             .ql-fill { fill: #ECECEC !important; }
             .ql-picker { color: #ECECEC !important; }
             .ql-editor.ql-blank::before { color: #666; }
+            
+            /* Ensure code blocks look good in dark mode too */
+            .ql-snow .ql-editor pre.ql-syntax {
+                border: 1px solid #444;
+            }
         }
     </style>
 <script type="importmap">
@@ -120,6 +151,7 @@
     "html2canvas": "https://esm.sh/html2canvas@1.4.1",
     "pako": "https://esm.sh/pako@2.1.0",
     "react-quill": "https://esm.sh/react-quill@2.0.0?deps=react@18.2.0,react-dom@18.2.0",
+    "highlight.js": "https://esm.sh/highlight.js@11.9.0",
     "firebase/app": "https://esm.sh/firebase@10.8.1/app",
     "firebase/firestore": "https://esm.sh/firebase@10.8.1/firestore",
     "firebase/": "https://esm.sh/firebase@^12.8.0/",
@@ -135,4 +167,3 @@
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>
-    

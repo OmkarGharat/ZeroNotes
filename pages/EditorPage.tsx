@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 // CSS is loaded in index.html to avoid ESM import errors
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+// highlight.js is now loaded via script tag in index.html to satisfy Quill's global requirement
 
 import type { Note } from '../types';
 import { generateText } from '../services/geminiService';
@@ -226,7 +227,9 @@ const EditorPage: React.FC = () => {
     }
   };
 
-  const modules = {
+  // Memoize modules to prevent re-rendering loops in Quill
+  const modules = useMemo(() => ({
+    syntax: true, // Enable syntax highlighting module
     toolbar: [
       [{ 'header': [1, 2, false] }],
       ['bold', 'italic', 'blockquote', 'code-block'],
@@ -234,7 +237,7 @@ const EditorPage: React.FC = () => {
       ['link'],
       ['clean']
     ],
-  };
+  }), []);
 
   return (
     <div className="flex flex-col h-full mt-4">
