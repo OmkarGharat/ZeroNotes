@@ -32,7 +32,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
 
   return (
     <Link to={`/edit/${note.id}`} className="block group">
-      <div className="bg-transparent rounded-lg border border-openai-border dark:border-neutral-800 hover:border-gray-400 dark:hover:border-gray-600 transition-colors duration-200 p-6 flex flex-col h-56 relative">
+      <div className="bg-transparent rounded-lg border border-gray-200 dark:border-neutral-700 hover:border-gray-400 dark:hover:border-neutral-500 transition-colors duration-200 p-6 flex flex-col h-56 relative">
         
         <div className="flex justify-between items-start mb-3">
             <h3 className="text-lg font-medium text-openai-text dark:text-white line-clamp-1 pr-8">
@@ -73,4 +73,3 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
 };
 
 export default NoteCard;
-    

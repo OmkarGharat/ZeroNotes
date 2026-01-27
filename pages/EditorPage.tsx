@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas';
 import type { Note } from '../types';
 import { generateText } from '../services/geminiService';
 import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
-import { DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from '../components/Icons';
+import { ArrowLeftIcon, DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from '../components/Icons';
 
 const EditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -69,6 +69,11 @@ const EditorPage: React.FC = () => {
   };
 
   const handleSave = () => {
+    if (!title.trim()) {
+        showNotification('Please enter a title before saving.');
+        return;
+    }
+
     const savedNote = updateLocalStorage();
     if (!id && savedNote) {
         navigate(`/edit/${savedNote.id}`);
@@ -115,11 +120,16 @@ const EditorPage: React.FC = () => {
         return;
     }
 
-    if (!title && !content) return;
+    if (!title.trim()) {
+        showNotification('Please enter a title before sharing.');
+        return;
+    }
+
+    if (!content && !title) return;
 
     setIsPublishing(true);
     try {
-        const slug = await publishNoteToCloud(title || 'Untitled', content, cloudSlug);
+        const slug = await publishNoteToCloud(title, content, cloudSlug);
         setCloudSlug(slug);
         const savedNote = updateLocalStorage(slug);
         
@@ -236,13 +246,23 @@ const EditorPage: React.FC = () => {
       
       {/* Zen Toolbar Area */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Untitled"
-          className="text-4xl font-medium bg-transparent border-none focus:ring-0 p-0 w-full md:w-auto flex-grow text-openai-text dark:text-white placeholder-gray-300 dark:placeholder-gray-700 focus:outline-none"
-        />
+        
+        <div className="flex items-center gap-2 w-full md:w-auto flex-grow">
+             <button 
+                onClick={() => navigate('/')}
+                className="group p-2 -ml-2 text-gray-400 hover:text-openai-text dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-neutral-800"
+                aria-label="Back"
+            >
+                <ArrowLeftIcon className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Note Title"
+              className="text-4xl font-medium bg-transparent border-none focus:ring-0 p-0 w-full flex-grow text-openai-text dark:text-white placeholder-gray-300 dark:placeholder-gray-700 focus:outline-none"
+            />
+        </div>
         
         {/* Actions - Minimal Icons */}
         <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
@@ -346,4 +366,3 @@ const EditorPage: React.FC = () => {
 };
 
 export default EditorPage;
-    
