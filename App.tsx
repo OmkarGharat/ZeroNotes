@@ -33,12 +33,15 @@ function App() {
           </Routes>
         </main>
         
-        {/* Minimal Spacer instead of footer */}
-        <div className="h-20"></div>
+        {/* Footer */}
+        <footer className="py-10 text-center mb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium cursor-default">
+                Crafted by Omkar ✒️
+            </p>
+        </footer>
       </div>
     </HashRouter>
   );
 }
 
 export default App;
-    
