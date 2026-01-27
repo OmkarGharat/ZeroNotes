@@ -19,34 +19,17 @@ const HomePage: React.FC = () => {
   const handleDeleteNote = async (id: string) => {
     const noteToDelete = notes.find(n => n.id === id);
     if (!noteToDelete) return;
-
-    let confirmMessage = 'Are you sure you want to delete this note?';
-    if (noteToDelete.cloudSlug) {
-        confirmMessage = 'This note is shared publicly. Deleting it will also permanently remove the public link. Continue?';
-    }
-
-    // NoteCard handles the click event, but we double check confirmation here just in case logic moves or expands
-    // Actually, NoteCard usually handles the confirm dialog. 
-    // To properly support async deletion with feedback, we might want to handle it here.
-    // However, NoteCard calls this function after its own window.confirm. 
-    // Let's assume the user has already confirmed the "delete" action in UI, 
-    // but if it's a cloud note, we might want to do the extra check or just proceed.
-    // Since NoteCard has a simple confirm, we'll implement the logic here.
-    // Ideally NoteCard shouldn't have the confirm logic if we want conditional messages,
-    // but for now, we will perform the cloud deletion.
-
-    // If NoteCard already asked "Are you sure", we proceed.
-    
-    // Optimistic update or wait? 
-    // If cloud deletion fails, we probably shouldn't delete local note to avoid "orphan" public notes.
     
     if (noteToDelete.cloudSlug && isFirebaseConfigured()) {
         try {
             await deleteNoteFromCloud(noteToDelete.cloudSlug);
         } catch (error) {
             console.error(error);
-            alert("Failed to delete the public shared version. Local note was NOT deleted to prevent a ghost link.");
-            return;
+            const forceDelete = window.confirm(
+                "Failed to remove the shared public link.\n\n" +
+                "Delete locally anyway?"
+            );
+            if (!forceDelete) return;
         }
     }
 
@@ -56,40 +39,32 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+    <div className="animate-fade-in mt-12">
+      <div className="flex justify-between items-end mb-12">
         <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">My Notes</h1>
-            <p className="text-slate-500 mt-1">Manage and share your ideas</p>
+            <h1 className="text-3xl font-medium tracking-tight text-openai-text dark:text-white">Your Notes</h1>
         </div>
         <Link
           to="/new"
-          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+          className="inline-flex items-center gap-2 bg-openai-accent hover:bg-openai-accentHover text-white font-medium py-2.5 px-5 rounded-md transition-colors text-sm"
         >
-          <PlusIcon className="h-5 w-5" />
-          New Note
+          <PlusIcon className="h-4 w-4" />
+          Create note
         </Link>
       </div>
 
       {notes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {notes.map(note => (
             <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 border-dashed">
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-full mb-4">
-            <NoteIcon className="h-10 w-10 text-green-500" />
+        <div className="flex flex-col items-center justify-center py-32 opacity-60">
+          <div className="mb-6 text-gray-300 dark:text-gray-700">
+            <NoteIcon className="h-24 w-24 stroke-[0.5]" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white">No notes yet</h2>
-          <p className="text-slate-500 mt-2 mb-6 max-w-xs text-center">Capture your ideas, generate content with AI, and share with the world.</p>
-          <Link
-            to="/new"
-            className="text-green-600 font-medium hover:text-green-700 hover:underline underline-offset-4"
-          >
-            Create your first note &rarr;
-          </Link>
+          <p className="text-sm font-medium text-gray-500">ShareNote is ready.</p>
         </div>
       )}
     </div>
@@ -97,3 +72,4 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+    

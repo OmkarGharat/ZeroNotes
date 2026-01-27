@@ -14,17 +14,15 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = note.content;
   const textContent = tempDiv.textContent || tempDiv.innerText || '';
-  const snippet = textContent.substring(0, 100) + (textContent.length > 100 ? '...' : '');
+  const snippet = textContent.substring(0, 140) + (textContent.length > 140 ? '...' : '');
 
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // We delegate the confirmation logic to the parent (HomePage) which can handle async cloud deletion checks
-    // However, if we want a basic check here first:
-    let message = 'Are you sure you want to delete this note?';
+    let message = 'Delete this note?';
     if (note.cloudSlug) {
-        message = 'This note is shared publicly. Deleting it will also remove the public link. Are you sure?';
+        message = 'This note is public. Delete it?';
     }
     
     if (window.confirm(message)) {
@@ -34,38 +32,45 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
 
   return (
     <Link to={`/edit/${note.id}`} className="block group">
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-green-400 dark:hover:border-green-600 shadow-sm hover:shadow-lg transition-all duration-300 p-6 flex flex-col h-full relative overflow-hidden">
+      <div className="bg-transparent rounded-lg border border-openai-border dark:border-neutral-800 hover:border-gray-400 dark:hover:border-gray-600 transition-colors duration-200 p-6 flex flex-col h-56 relative">
         
-        <div className="absolute top-0 left-0 w-1 h-full bg-transparent group-hover:bg-green-500 transition-colors"></div>
-
-        <div className="flex-grow">
-          <div className="flex justify-between items-start">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors line-clamp-1 pr-6">
-              {note.title || 'Untitled Note'}
+        <div className="flex justify-between items-start mb-3">
+            <h3 className="text-lg font-medium text-openai-text dark:text-white line-clamp-1 pr-8">
+              {note.title || 'Untitled'}
             </h3>
+            
+            {/* Delete button appears on hover, extremely subtle */}
             <button
               onClick={handleDelete}
-              className="text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 duration-200 absolute right-4 top-4 z-10"
+              className="text-gray-300 hover:text-red-500 transition-colors absolute right-5 top-6 opacity-0 group-hover:opacity-100"
               aria-label="Delete note"
             >
-              <TrashIcon className="h-5 w-5" />
+              <TrashIcon className="h-4 w-4" />
             </button>
-          </div>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3 leading-relaxed">
-            {snippet || <span className="italic text-slate-400">No additional text</span>}
+        </div>
+
+        <div className="flex-grow">
+          <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed line-clamp-4 font-normal">
+            {snippet || <span className="opacity-40">Empty note</span>}
           </p>
         </div>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
-          <span>{new Date(note.updatedAt).toLocaleDateString()}</span>
+        
+        <div className="mt-auto pt-4 flex items-center justify-between">
+          <span className="text-xs text-gray-400 dark:text-gray-600 font-normal">
+            {new Date(note.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+          
           {note.cloudSlug && (
-             <span className="flex items-center gap-1 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider">
-                <ShareIcon className="h-3 w-3" /> Shared
+             <span className="text-openai-accent flex items-center gap-1.5 text-xs font-medium">
+                <div className="w-1.5 h-1.5 rounded-full bg-openai-accent"></div>
+                Public
              </span>
           )}
-        </p>
+        </div>
       </div>
     </Link>
   );
 };
 
 export default NoteCard;
+    

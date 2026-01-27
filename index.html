@@ -9,10 +9,104 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React Quill theme -->
     <link href="https://cdn.jsdelivr.net/npm/react-quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <script>
-      // Polyfill process.env to prevent crashes in browser environments
+      // Polyfill process.env
       window.process = window.process || { env: { NODE_ENV: 'production' } };
+      
+      // Tailwind Config for custom colors and fonts
+      tailwind.config = {
+        darkMode: 'media', // or 'class'
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              openai: {
+                bg: '#FFFFFF',
+                text: '#111111',
+                border: '#EFEFEF',
+                darkBg: '#212121', // Deep charcoal
+                darkText: '#ECECEC',
+                accent: '#10A37F', // OpenAI Green
+                accentHover: '#0d8a6a'
+              }
+            }
+          }
+        }
+      }
     </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFFFFF;
+            color: #111111;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #212121;
+                color: #ECECEC;
+            }
+        }
+
+        /* Minimalist Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E5E5E5;
+            border-radius: 4px;
+        }
+        @media (prefers-color-scheme: dark) {
+            ::-webkit-scrollbar-thumb {
+                background: #444;
+            }
+        }
+
+        /* Zen Quill Editor Overrides */
+        .ql-toolbar.ql-snow {
+            border: none !important;
+            padding: 12px 0 !important;
+            margin-bottom: 20px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .ql-toolbar.ql-snow:hover {
+            opacity: 1;
+        }
+        .ql-container.ql-snow {
+            border: none !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 16px;
+        }
+        .ql-editor {
+            padding: 0 !important;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+        .ql-editor.ql-blank::before {
+            color: #a0a0a0;
+            font-style: normal;
+            left: 0;
+        }
+        
+        /* Dark mode overrides for Quill */
+        @media (prefers-color-scheme: dark) {
+            .ql-stroke { stroke: #ECECEC !important; }
+            .ql-fill { fill: #ECECEC !important; }
+            .ql-picker { color: #ECECEC !important; }
+            .ql-editor.ql-blank::before { color: #666; }
+        }
+    </style>
 <script type="importmap">
 {
   "imports": {
@@ -36,8 +130,9 @@
 }
 </script>
 </head>
-<body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+<body class="antialiased selection:bg-gray-200 dark:selection:bg-gray-700">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>
+    
