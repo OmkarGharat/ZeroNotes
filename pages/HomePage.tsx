@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { Note } from '../types';
 import NoteCard from '../components/NoteCard';
 import { PlusIcon, NoteIcon } from '../components/Icons';
+import { deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 
 const HomePage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -15,7 +16,40 @@ const HomePage: React.FC = () => {
     setNotes(savedNotes);
   }, []);
 
-  const handleDeleteNote = (id: string) => {
+  const handleDeleteNote = async (id: string) => {
+    const noteToDelete = notes.find(n => n.id === id);
+    if (!noteToDelete) return;
+
+    let confirmMessage = 'Are you sure you want to delete this note?';
+    if (noteToDelete.cloudSlug) {
+        confirmMessage = 'This note is shared publicly. Deleting it will also permanently remove the public link. Continue?';
+    }
+
+    // NoteCard handles the click event, but we double check confirmation here just in case logic moves or expands
+    // Actually, NoteCard usually handles the confirm dialog. 
+    // To properly support async deletion with feedback, we might want to handle it here.
+    // However, NoteCard calls this function after its own window.confirm. 
+    // Let's assume the user has already confirmed the "delete" action in UI, 
+    // but if it's a cloud note, we might want to do the extra check or just proceed.
+    // Since NoteCard has a simple confirm, we'll implement the logic here.
+    // Ideally NoteCard shouldn't have the confirm logic if we want conditional messages,
+    // but for now, we will perform the cloud deletion.
+
+    // If NoteCard already asked "Are you sure", we proceed.
+    
+    // Optimistic update or wait? 
+    // If cloud deletion fails, we probably shouldn't delete local note to avoid "orphan" public notes.
+    
+    if (noteToDelete.cloudSlug && isFirebaseConfigured()) {
+        try {
+            await deleteNoteFromCloud(noteToDelete.cloudSlug);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to delete the public shared version. Local note was NOT deleted to prevent a ghost link.");
+            return;
+        }
+    }
+
     const updatedNotes = notes.filter(note => note.id !== id);
     localStorage.setItem('notes', JSON.stringify(updatedNotes));
     setNotes(updatedNotes);

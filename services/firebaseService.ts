@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, collection } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection } from 'firebase/firestore';
 
 // Configuration from environment variables
 // In Vercel, you set these in the Project Settings > Environment Variables
@@ -70,5 +70,16 @@ export const fetchNoteFromCloud = async (slug: string): Promise<{title: string, 
     } catch (error) {
         console.error("Error fetching note:", error);
         return null;
+    }
+};
+
+export const deleteNoteFromCloud = async (slug: string): Promise<void> => {
+    if (!db) return; // Fail silently if no DB, or throw error depending on needs
+
+    try {
+        await deleteDoc(doc(db, "shared_notes", slug));
+    } catch (error) {
+        console.error("Error deleting note from cloud:", error);
+        throw error;
     }
 };

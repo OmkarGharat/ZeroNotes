@@ -77,6 +77,31 @@ const EditorPage: React.FC = () => {
     try {
         const slug = await publishNoteToCloud(title || 'Untitled', content);
         
+        // Save the cloud slug to the local note so we can manage it later
+        const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
+        const now = Date.now();
+        
+        if (id) {
+             // Update existing note
+             const updatedNotes = notes.map(note => 
+                note.id === id ? { ...note, title, content, updatedAt: now, cloudSlug: slug } : note
+             );
+             localStorage.setItem('notes', JSON.stringify(updatedNotes));
+        } else {
+             // Create new note if user shared before saving
+             const newNote: Note = {
+                id: `note-${now}`,
+                title,
+                content,
+                createdAt: now,
+                updatedAt: now,
+                cloudSlug: slug
+             };
+             localStorage.setItem('notes', JSON.stringify([...notes, newNote]));
+             // Navigate to the edit URL of the newly created note
+             navigate(`/edit/${newNote.id}`);
+        }
+
         // Construct the short URL
         const baseUrl = window.location.href.split('#')[0];
         const shareUrl = `${baseUrl}#/${slug}`;
