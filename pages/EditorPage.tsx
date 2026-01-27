@@ -8,8 +8,8 @@ import html2canvas from 'html2canvas';
 
 import type { Note } from '../types';
 import { generateText } from '../services/geminiService';
-import { publishNoteToCloud, isFirebaseConfigured } from '../services/firebaseService';
-import { DownloadIcon, ShareIcon, SparklesIcon } from '../components/Icons';
+import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
+import { DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from '../components/Icons';
 
 const EditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +18,8 @@ const EditorPage: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [cloudSlug, setCloudSlug] = useState<string | undefined>(undefined);
+  
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -31,6 +33,7 @@ const EditorPage: React.FC = () => {
       if (noteToEdit) {
         setTitle(noteToEdit.title);
         setContent(noteToEdit.content);
+        setCloudSlug(noteToEdit.cloudSlug);
       }
     }
   }, [id]);
@@ -40,14 +43,20 @@ const EditorPage: React.FC = () => {
     setTimeout(() => setNotification(''), 3000);
   };
   
-  const handleSave = () => {
+  const updateLocalStorage = (newSlug?: string | null) => {
     const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
     const now = Date.now();
+    
+    // If null is passed, we remove the slug (undefined). If string, we set it. 
+    // If undefined is passed, we keep existing logic (not handled here, mostly for explicitness)
+    const finalSlug = newSlug === null ? undefined : (newSlug || cloudSlug);
+
     if (id) {
       const updatedNotes = notes.map(note => 
-        note.id === id ? { ...note, title, content, updatedAt: now } : note
+        note.id === id ? { ...note, title, content, updatedAt: now, cloudSlug: finalSlug } : note
       );
       localStorage.setItem('notes', JSON.stringify(updatedNotes));
+      return updatedNotes.find(n => n.id === id);
     } else {
       const newNote: Note = {
         id: `note-${now}`,
@@ -55,9 +64,17 @@ const EditorPage: React.FC = () => {
         content,
         createdAt: now,
         updatedAt: now,
+        cloudSlug: finalSlug
       };
       localStorage.setItem('notes', JSON.stringify([...notes, newNote]));
-      navigate(`/edit/${newNote.id}`);
+      return newNote;
+    }
+  };
+
+  const handleSave = () => {
+    const savedNote = updateLocalStorage();
+    if (!id && savedNote) {
+        navigate(`/edit/${savedNote.id}`);
     }
     showNotification('Note saved successfully!');
   };
@@ -75,31 +92,16 @@ const EditorPage: React.FC = () => {
 
     setIsPublishing(true);
     try {
-        const slug = await publishNoteToCloud(title || 'Untitled', content);
+        // Pass existing cloudSlug to update the SAME document instead of creating a new orphan
+        const slug = await publishNoteToCloud(title || 'Untitled', content, cloudSlug);
         
-        // Save the cloud slug to the local note so we can manage it later
-        const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
-        const now = Date.now();
+        setCloudSlug(slug);
         
-        if (id) {
-             // Update existing note
-             const updatedNotes = notes.map(note => 
-                note.id === id ? { ...note, title, content, updatedAt: now, cloudSlug: slug } : note
-             );
-             localStorage.setItem('notes', JSON.stringify(updatedNotes));
-        } else {
-             // Create new note if user shared before saving
-             const newNote: Note = {
-                id: `note-${now}`,
-                title,
-                content,
-                createdAt: now,
-                updatedAt: now,
-                cloudSlug: slug
-             };
-             localStorage.setItem('notes', JSON.stringify([...notes, newNote]));
-             // Navigate to the edit URL of the newly created note
-             navigate(`/edit/${newNote.id}`);
+        // Update local storage
+        const savedNote = updateLocalStorage(slug);
+        
+        if (!id && savedNote) {
+            navigate(`/edit/${savedNote.id}`);
         }
 
         // Construct the short URL
@@ -107,14 +109,31 @@ const EditorPage: React.FC = () => {
         const shareUrl = `${baseUrl}#/${slug}`;
         
         navigator.clipboard.writeText(shareUrl).then(() => {
-            showNotification('Public link copied to clipboard!');
+            showNotification(cloudSlug ? 'Public link updated & copied!' : 'Public link created & copied!');
         }).catch(() => {
             showNotification('Link generated but failed to copy.');
-            console.log(shareUrl);
         });
     } catch (error) {
         console.error(error);
         showNotification('Failed to publish note. Check console.');
+    } finally {
+        setIsPublishing(false);
+    }
+  };
+
+  const handleStopSharing = async () => {
+    if (!cloudSlug) return;
+    if (!window.confirm("Are you sure you want to stop sharing? The public link will stop working immediately.")) return;
+
+    setIsPublishing(true);
+    try {
+        await deleteNoteFromCloud(cloudSlug);
+        setCloudSlug(undefined);
+        updateLocalStorage(null); // Pass null to explicitly remove slug
+        showNotification("Note is no longer shared.");
+    } catch (error) {
+        console.error(error);
+        showNotification("Failed to delete public link.");
     } finally {
         setIsPublishing(false);
     }
@@ -220,15 +239,34 @@ const EditorPage: React.FC = () => {
                 <SparklesIcon className="h-4 w-4" /> AI Assist
             </button>
             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
-            <button 
-                onClick={handleShare} 
-                disabled={isPublishing}
-                className="p-2 text-slate-500 hover:text-green-600 transition-colors disabled:opacity-50 hover:bg-green-50 rounded-lg" 
-                aria-label="Share note"
-                title={isPublishing ? "Publishing..." : "Share Public Link"}
-            >
-                <ShareIcon className={`h-5 w-5 ${isPublishing ? 'animate-pulse text-green-500' : ''}`} />
-            </button>
+            
+            {/* Share Button Group */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+                <button 
+                    onClick={handleShare} 
+                    disabled={isPublishing}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        cloudSlug 
+                        ? 'bg-white dark:bg-slate-800 text-green-600 shadow-sm' 
+                        : 'text-slate-600 dark:text-slate-300 hover:text-green-600 hover:bg-white dark:hover:bg-slate-600'
+                    }`}
+                    title={cloudSlug ? "Update public link" : "Create public link"}
+                >
+                    <ShareIcon className={`h-4 w-4 ${isPublishing ? 'animate-pulse' : ''}`} />
+                    {cloudSlug ? 'Updated' : 'Share'}
+                </button>
+                {cloudSlug && (
+                    <button 
+                        onClick={handleStopSharing}
+                        disabled={isPublishing}
+                        className="px-2 py-2 text-slate-400 hover:text-red-500 rounded-md hover:bg-white dark:hover:bg-slate-600 transition-colors"
+                        title="Stop sharing (Delete public link)"
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
             <button 
               onClick={handleDownloadPdf} 
               className="p-2 text-slate-500 hover:text-green-600 transition-colors hover:bg-green-50 rounded-lg" 

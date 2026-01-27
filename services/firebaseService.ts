@@ -28,26 +28,30 @@ try {
 
 export const isFirebaseConfigured = () => !!db;
 
-export const publishNoteToCloud = async (title: string, content: string): Promise<string> => {
+export const publishNoteToCloud = async (title: string, content: string, existingSlug?: string): Promise<string> => {
     if (!db) throw new Error("Firebase is not configured. Please set environment variables.");
 
-    // Create a URL-friendly slug from the title
-    let slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
-        .replace(/(^-|-$)+/g, '') // Remove leading/trailing hyphens
-        || 'untitled';
+    let slug = existingSlug;
 
-    // Append random characters to ensure uniqueness and prevent overwriting
-    const randomSuffix = Math.random().toString(36).substring(2, 6);
-    slug = `${slug}-${randomSuffix}`;
+    if (!slug) {
+        // Create a URL-friendly slug from the title only if we don't have one
+        let baseSlug = title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+            .replace(/(^-|-$)+/g, '') // Remove leading/trailing hyphens
+            || 'untitled';
+
+        // Append random characters to ensure uniqueness
+        const randomSuffix = Math.random().toString(36).substring(2, 6);
+        slug = `${baseSlug}-${randomSuffix}`;
+    }
 
     try {
         await setDoc(doc(db, "shared_notes", slug), {
             title,
             content,
-            createdAt: Date.now()
-        });
+            updatedAt: Date.now()
+        }, { merge: true });
         return slug;
     } catch (error) {
         console.error("Error publishing note:", error);
