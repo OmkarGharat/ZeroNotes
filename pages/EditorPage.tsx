@@ -64,7 +64,7 @@ const EditorPage: React.FC = () => {
 
   const handleShare = async () => {
     if (!isFirebaseConfigured()) {
-        alert("Sharing requires database configuration.\n\nPlease set REACT_APP_FIREBASE_API_KEY and other variables in your environment.");
+        alert("Sharing requires database configuration.\n\nPlease check that FIREBASE_API_KEY and other variables are set in your Vercel Environment Variables.");
         return;
     }
 
