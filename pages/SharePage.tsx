@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactQuill from 'react-quill';
+import TurndownService from 'turndown';
 // CSS is loaded in index.html
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 import { fetchNoteFromCloud } from '../services/firebaseService';
 import { DownloadIcon, LogoIcon } from '../components/Icons';
@@ -43,48 +42,45 @@ const SharePage: React.FC = () => {
         loadNote();
     }, [slug]);
 
-    const handleDownloadPdf = () => {
+    const handleDownloadMarkdown = () => {
         if (!note || !contentRef.current) return;
         
-        const editor = contentRef.current.querySelector('.ql-editor') as HTMLElement;
-        if (!editor) return;
+        const editorContent = contentRef.current.querySelector('.ql-editor');
+        if (!editorContent) return;
         setIsDownloading(true);
 
-        html2canvas(editor, {
-            scale: 2,
-            backgroundColor: '#ffffff', 
-            onclone: (clonedDoc) => {
-                const editorEl = clonedDoc.querySelector('.ql-editor') as HTMLElement;
-                if (editorEl) editorEl.style.color = '#000';
-            },
-        }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+        try {
+            const turndownService = new TurndownService({
+                headingStyle: 'atx',
+                codeBlockStyle: 'fenced'
+            });
+
+            turndownService.addRule('quillCodeBlock', {
+                filter: (node) => {
+                    return node.nodeName === 'PRE' && node.classList.contains('ql-syntax');
+                },
+                replacement: (content, node) => {
+                    return '\n```\n' + node.textContent + '\n```\n';
+                }
+            });
+
+            const markdown = turndownService.turndown(editorContent.innerHTML);
+            const filename = (note.title.trim() || 'shared-note') + '.md';
             
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-            let heightLeft = imgHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
-
-            while (heightLeft > 0) {
-                position -= pdfHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pdfHeight;
-            }
-
-            pdf.save(`${note.title || 'shared-note'}.pdf`);
+            const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Markdown download failed:", err);
+        } finally {
             setIsDownloading(false);
-        }).catch(err => {
-            console.error(err);
-            setIsDownloading(false);
-        });
+        }
     };
 
     if (loading) {
@@ -113,10 +109,10 @@ const SharePage: React.FC = () => {
             <div className="flex items-center justify-between mb-12">
                 <h1 className="text-4xl font-medium text-openai-text dark:text-white">{note.title || 'Untitled'}</h1>
                 <button
-                    onClick={handleDownloadPdf}
+                    onClick={handleDownloadMarkdown}
                     disabled={isDownloading}
                     className="p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-                    title="Download PDF"
+                    title="Download Markdown"
                 >
                     <DownloadIcon className="h-5 w-5" />
                 </button>
@@ -133,6 +129,7 @@ const SharePage: React.FC = () => {
             
             <div className="mt-20 pt-10 border-t border-gray-100 dark:border-neutral-800 text-center">
                  <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors text-sm">
+                    <LogoIcon className="w-4 h-4" />
                     <span className="font-medium">Powered by ShareNote</span>
                  </Link>
             </div>
@@ -141,4 +138,3 @@ const SharePage: React.FC = () => {
 };
 
 export default SharePage;
-    

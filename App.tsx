@@ -15,8 +15,7 @@ function App() {
         <header className="pt-8 pb-4">
           <div className="max-w-3xl mx-auto px-6 flex items-center justify-between">
             <Link to="/" className="group flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
-               {/* Minimal Logo - just a small shape or text */}
-               <div className="w-5 h-5 bg-black dark:bg-white rounded-sm"></div>
+               <LogoIcon className="w-6 h-6 text-black dark:text-white" />
                <span className="font-medium text-lg tracking-tight">ShareNote</span>
             </Link>
           </div>

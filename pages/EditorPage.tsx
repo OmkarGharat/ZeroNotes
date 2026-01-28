@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
+import TurndownService from 'turndown';
 // CSS is loaded in index.html to avoid ESM import errors
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 // highlight.js is now loaded via script tag in index.html to satisfy Quill's global requirement
 
 import type { Note } from '../types';
@@ -227,42 +226,40 @@ const EditorPage: React.FC = () => {
     }
   };
 
-  const handleDownloadPdf = () => {
-    const editor = document.querySelector('.ql-editor') as HTMLElement;
-    if (!editor) return;
-    showNotification('Downloading PDF...');
+  const handleDownloadMarkdown = () => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
 
-    html2canvas(editor, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      onclone: (clonedDoc) => {
-        const editorEl = clonedDoc.querySelector('.ql-editor') as HTMLElement;
-        if (editorEl) editorEl.style.color = '#000';
-      },
-    }).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft > 0) {
-        position -= pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-      }
-      
-      pdf.save(`${title || 'note'}.pdf`);
+    const turndownService = new TurndownService({ 
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced'
     });
+    
+    // Custom rule for Quill code blocks to handle them gracefully
+    turndownService.addRule('quillCodeBlock', {
+        filter: (node) => {
+            // Quill uses <pre class="ql-syntax"> for code blocks
+            return node.nodeName === 'PRE' && node.classList.contains('ql-syntax');
+        },
+        replacement: (content, node) => {
+            // Use textContent to strip out highlight.js syntax spans if present
+            return '\n```\n' + node.textContent + '\n```\n';
+        }
+    });
+
+    const markdown = turndownService.turndown(quill.root.innerHTML);
+    const filename = (title.trim() || 'Untitled') + '.md';
+
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showNotification('Downloaded Markdown');
   };
 
   const handleGenerateAiContent = async () => {
@@ -396,9 +393,9 @@ const EditorPage: React.FC = () => {
             )}
 
             <button 
-              onClick={handleDownloadPdf} 
+              onClick={handleDownloadMarkdown} 
               className="p-2 text-openai-text dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
-              title="Download PDF"
+              title="Download Markdown"
             >
               <DownloadIcon className="h-5 w-5" />
             </button>
