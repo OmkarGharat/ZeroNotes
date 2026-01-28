@@ -122,6 +122,16 @@
             overflow-x: auto;
         }
 
+        /* 5. Horizontal Rule Styling */
+        .ql-editor hr {
+            border: 0;
+            border-top: 2px solid #E5E7EB; /* Gray-200 */
+            margin: 24px 0;
+            display: block;
+            height: 1px;
+            width: 100%;
+        }
+
         /* Dark mode overrides */
         @media (prefers-color-scheme: dark) {
             .ql-toolbar.ql-snow {
@@ -132,9 +142,28 @@
             .ql-picker { color: #ECECEC !important; }
             .ql-editor.ql-blank::before { color: #666; }
             
+            /* Quill Dropdown Fixes for Dark Mode */
+            .ql-snow .ql-picker-options {
+                background-color: #2F2F2F !important;
+                border: 1px solid #444 !important;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+            }
+            .ql-snow .ql-picker-item {
+                color: #ECECEC !important;
+            }
+            .ql-snow .ql-picker-item:hover,
+            .ql-snow .ql-picker-item.ql-selected {
+                color: #FFFFFF !important;
+                background-color: #404040 !important;
+            }
+            
             /* Ensure code blocks look good in dark mode too */
             .ql-snow .ql-editor pre.ql-syntax {
                 border: 1px solid #444;
+            }
+            
+            .ql-editor hr {
+                border-top-color: #404040; /* Neutral-700 */
             }
         }
     </style>

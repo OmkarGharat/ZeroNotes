@@ -12,6 +12,22 @@ import { generateText } from '../services/geminiService';
 import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 import { ArrowLeftIcon, DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from '../components/Icons';
 
+// Access Quill instance from ReactQuill
+const Quill = ReactQuill.Quill;
+
+// Register a custom divider blot (hr)
+const BlockEmbed = Quill.import('blots/block/embed');
+class DividerBlot extends BlockEmbed {
+  static blotName = 'divider';
+  static tagName = 'hr';
+
+  static create() {
+    const node = super.create();
+    return node;
+  }
+}
+Quill.register(DividerBlot);
+
 const EditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -69,9 +85,43 @@ const EditorPage: React.FC = () => {
     }
   };
 
+  const isEditorEmpty = () => {
+    const editor = quillRef.current?.getEditor();
+    if (!editor) return true; // Safety check
+    
+    // Check for text content (ignoring whitespace)
+    const text = editor.getText().trim();
+    if (text.length > 0) return false;
+    
+    // Check for embeds (images, dividers, etc.)
+    // editor.getContents().ops is an array of operations.
+    // Embeds are represented by an insert operation where the value is an object.
+    const contents = editor.getContents();
+    const hasEmbed = contents.ops?.some((op: any) => typeof op.insert === 'object');
+    
+    return !hasEmbed;
+  };
+
+  const isTitleDuplicate = (candidateTitle: string) => {
+    const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
+    const normalized = candidateTitle.trim().toLowerCase();
+    // Check if any other note has the same title (case-insensitive)
+    return notes.some(n => n.title.trim().toLowerCase() === normalized && n.id !== id);
+  };
+
   const handleSave = () => {
     if (!title.trim()) {
         showNotification('Please enter a title before saving.');
+        return;
+    }
+
+    if (isTitleDuplicate(title)) {
+        showNotification('A note with this name already exists.');
+        return;
+    }
+
+    if (isEditorEmpty()) {
+        showNotification('Note is empty. Please add content.');
         return;
     }
 
@@ -126,7 +176,15 @@ const EditorPage: React.FC = () => {
         return;
     }
 
-    if (!content && !title) return;
+    if (isTitleDuplicate(title)) {
+        showNotification('A note with this name already exists.');
+        return;
+    }
+
+    if (isEditorEmpty()) {
+        showNotification('Cannot share empty note.');
+        return;
+    }
 
     setIsPublishing(true);
     try {
@@ -237,6 +295,40 @@ const EditorPage: React.FC = () => {
       ['link'],
       ['clean']
     ],
+    keyboard: {
+      bindings: {
+        // Auto-format "---" to horizontal rule
+        divider: {
+          key: 13, // Enter
+          collapsed: true,
+          prefix: /^---$/,
+          handler: function(this: any, range: any, context: any) {
+             const quill = this.quill;
+             const [line, offset] = quill.getLine(range.index);
+             
+             // Check if the line is exactly "---" and we are at the end of it
+             if (line.domNode.textContent.trim() === '---' && offset === 3) {
+                 // Delete the "---" text
+                 quill.deleteText(range.index - 3, 3);
+                 
+                 // Insert the divider embed
+                 quill.insertEmbed(range.index - 3, 'divider', true, 'user');
+                 
+                 // Insert a newline after the divider so the user can type below it
+                 // We add +1 because the embed takes length 1
+                 quill.insertText(range.index - 3 + 1, '\n', 'user');
+                 
+                 // Move cursor to the new line
+                 quill.setSelection(range.index - 3 + 2, 0);
+                 
+                 // Prevent default Enter behavior
+                 return false;
+             }
+             return true;
+          }
+        }
+      }
+    }
   }), []);
 
   return (
