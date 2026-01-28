@@ -329,7 +329,7 @@ const EditorPage: React.FC = () => {
   }), []);
 
   return (
-    <div className="flex flex-col h-full mt-4">
+    <div className="flex flex-col h-full mt-4 max-w-3xl mx-auto w-full">
       {notification && (
         <div className="fixed top-5 left-1/2 transform -translate-x-1/2 bg-black text-white text-sm py-2 px-6 rounded-full shadow-lg z-50 animate-fade-in-out">
           {notification}

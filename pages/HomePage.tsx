@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
   });
 
   return (
-    <div className="animate-fade-in mt-12">
+    <div className="animate-fade-in mt-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
         <div>
             <h1 className="text-3xl font-medium tracking-tight text-openai-text dark:text-white">Your Notes</h1>
@@ -83,7 +83,7 @@ const HomePage: React.FC = () => {
           <p className="text-sm font-medium text-gray-500">ShareNote is ready.</p>
         </div>
       ) : filteredNotes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredNotes.map(note => (
             <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} />
           ))}

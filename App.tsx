@@ -13,7 +13,7 @@ function App() {
         
         {/* Minimal Header */}
         <header className="pt-8 pb-4">
-          <div className="max-w-3xl mx-auto px-6 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
             <Link to="/" className="group flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
                <LogoIcon className="w-6 h-6 text-black dark:text-white" />
                <span className="font-medium text-lg tracking-tight">ShareNote</span>
@@ -21,8 +21,8 @@ function App() {
           </div>
         </header>
 
-        {/* Main Content - Narrow & Focused */}
-        <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-6">
+        {/* Main Content - Wider container for Home, specific pages constrain themselves */}
+        <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-6">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/new" element={<EditorPage />} />
