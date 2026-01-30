@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Note } from '../types';
@@ -48,49 +47,52 @@ const HomePage: React.FC = () => {
   });
 
   return (
-    <div className="animate-fade-in mt-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
+    <div className="animate-fade-in mt-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
         <div>
-            <h1 className="text-3xl font-medium tracking-tight text-openai-text dark:text-white">Your Notes</h1>
+            <h1 className="text-4xl font-semibold tracking-tight text-zero-text dark:text-zero-darkText">ZeroNotes</h1>
+            <p className="text-zero-secondaryText dark:text-zero-darkSecondaryText mt-2 text-sm max-w-md leading-relaxed">
+                A minimalist workspace for your thoughts, enhanced by AI.
+            </p>
         </div>
         
-        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-             <div className="relative group">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto items-center">
+             <div className="relative group w-full md:w-64">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-zero-accent dark:group-focus-within:text-zero-darkAccent transition-colors" />
                 <input 
                     type="text"
-                    placeholder="Search notes..."
+                    placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full md:w-64 pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-neutral-800 border border-transparent focus:bg-white dark:focus:bg-neutral-900 border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:border-gray-300 dark:focus:border-neutral-600 transition-all text-openai-text dark:text-white placeholder-gray-400"
+                    className="w-full pl-9 pr-4 py-2 bg-zero-surface dark:bg-zero-darkSurface border border-transparent focus:bg-white dark:focus:bg-zero-darkBg border-zero-border dark:border-zero-darkBorder rounded-md text-sm focus:outline-none focus:border-zero-border dark:focus:border-neutral-600 transition-all text-zero-text dark:text-zero-darkText placeholder-gray-400"
                 />
              </div>
             <Link
                 to="/new"
-                className="inline-flex items-center justify-center gap-2 bg-openai-accent hover:bg-openai-accentHover text-white font-medium py-2.5 px-5 rounded-md transition-colors text-sm whitespace-nowrap"
+                className="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-zero-accent dark:bg-zero-darkAccent text-white dark:text-black font-medium py-2 px-5 rounded-md hover:opacity-90 transition-all duration-300 text-sm whitespace-nowrap shadow-sm"
             >
                 <PlusIcon className="h-4 w-4" />
-                Create note
+                New Note
             </Link>
         </div>
       </div>
 
       {notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 opacity-60">
-          <div className="mb-6 text-gray-300 dark:text-gray-700">
-            <NoteIcon className="h-24 w-24 stroke-[0.5]" />
+        <div className="flex flex-col items-center justify-center py-40 opacity-40 border border-dashed border-zero-border dark:border-zero-darkBorder rounded-lg">
+          <div className="mb-4 text-zero-secondaryText dark:text-zero-darkSecondaryText">
+            <NoteIcon className="h-16 w-16 stroke-[0.5]" />
           </div>
-          <p className="text-sm font-medium text-gray-500">ShareNote is ready.</p>
+          <p className="text-sm font-medium tracking-wide">ZERO FRICTION. START WRITING.</p>
         </div>
       ) : filteredNotes.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredNotes.map(note => (
             <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-600">
-            <p className="text-sm">No notes found matching "{searchQuery}"</p>
+        <div className="flex flex-col items-center justify-center py-20 text-zero-secondaryText">
+            <p className="text-sm">No results for "{searchQuery}"</p>
         </div>
       )}
     </div>

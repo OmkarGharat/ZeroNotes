@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactQuill from 'react-quill';
@@ -85,8 +84,8 @@ const SharePage: React.FC = () => {
 
     if (loading) {
         return (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] opacity-50">
-             <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+          <div className="flex flex-col items-center justify-center min-h-[50vh] opacity-30">
+             <div className="w-5 h-5 border-2 border-gray-300 border-t-black dark:border-t-white rounded-full animate-spin"></div>
           </div>
         );
     }
@@ -94,8 +93,8 @@ const SharePage: React.FC = () => {
     if (error) {
         return (
             <div className="text-center mt-32">
-                <p className="text-lg text-gray-500 mb-6">{error}</p>
-                <Link to="/" className="text-black dark:text-white underline underline-offset-4 decoration-gray-300 hover:decoration-black">
+                <p className="text-lg text-zero-secondaryText mb-6 font-light">{error}</p>
+                <Link to="/" className="text-zero-text dark:text-zero-darkText text-sm font-medium border-b border-gray-300 pb-0.5 hover:border-black dark:hover:border-white transition-colors">
                   Go Home
                 </Link>
             </div>
@@ -105,13 +104,13 @@ const SharePage: React.FC = () => {
     if (!note) return null;
 
     return (
-        <div className="max-w-3xl mx-auto mt-12">
-            <div className="flex items-center justify-between mb-12">
-                <h1 className="text-4xl font-medium text-openai-text dark:text-white">{note.title || 'Untitled'}</h1>
+        <div className="max-w-4xl mx-auto mt-12 animate-fade-in">
+            <div className="flex items-start justify-between mb-16 border-b border-zero-border dark:border-zero-darkBorder pb-8">
+                <h1 className="text-4xl font-semibold tracking-tight text-zero-text dark:text-zero-darkText">{note.title || 'Untitled'}</h1>
                 <button
                     onClick={handleDownloadMarkdown}
                     disabled={isDownloading}
-                    className="p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                    className="p-2 text-gray-400 hover:text-zero-text dark:hover:text-white transition-colors rounded-md"
                     title="Download Markdown"
                 >
                     <DownloadIcon className="h-5 w-5" />
@@ -127,10 +126,10 @@ const SharePage: React.FC = () => {
                 />
             </div>
             
-            <div className="mt-20 pt-10 border-t border-gray-100 dark:border-neutral-800 text-center">
-                 <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors text-sm">
-                    <LogoIcon className="w-4 h-4" />
-                    <span className="font-medium">Powered by ShareNote</span>
+            <div className="mt-24 py-8 border-t border-zero-border dark:border-zero-darkBorder text-center">
+                 <Link to="/" className="inline-flex items-center gap-2 text-zero-secondaryText hover:text-zero-text dark:hover:text-white transition-colors text-xs uppercase tracking-widest font-medium">
+                    <LogoIcon className="w-3 h-3" />
+                    <span>ZeroNotes</span>
                  </Link>
             </div>
         </div>

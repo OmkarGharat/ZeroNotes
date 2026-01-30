@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import TurndownService from 'turndown';
-// CSS is loaded in index.html to avoid ESM import errors
-// highlight.js is now loaded via script tag in index.html to satisfy Quill's global requirement
+import { Marked } from 'marked';
+// CSS is loaded in index.html
 
 import type { Note } from '../types';
 import { generateText } from '../services/geminiService';
@@ -42,6 +41,7 @@ const EditorPage: React.FC = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [notification, setNotification] = useState('');
   
+  // Load note data
   useEffect(() => {
     if (id) {
       const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
@@ -53,6 +53,61 @@ const EditorPage: React.FC = () => {
       }
     }
   }, [id]);
+
+  // Handle Markdown Paste (logic remains same)
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    const marked = new Marked({ gfm: true, breaks: true });
+    marked.use({
+        renderer: {
+            code(code, language) {
+                const cleanCode = code.replace(/\n\s*\n/g, '\n');
+                const escapedCode = cleanCode
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+                const langAttr = language ? ` class="language-${language}"` : '';
+                return `<pre><code${langAttr}>${escapedCode}</code></pre>`;
+            }
+        }
+    });
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+      const text = clipboardData.getData('text/plain');
+      if (!text) return;
+
+      const isMarkdown = 
+        /^#{1,6}\s/m.test(text) ||
+        /^```/m.test(text) ||
+        /(\*\*|__)(.*?)\1/.test(text) ||
+        /^(\*|-|\d+\.)\s/m.test(text) ||
+        /^>\s/m.test(text) ||
+        /`[^`]+`/.test(text);
+
+      if (isMarkdown) {
+        e.preventDefault();
+        try {
+            const html = marked.parse(text) as string;
+            const range = quill.getSelection(true);
+            if (range) {
+                quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+            }
+        } catch (error) {
+            console.error('Failed to parse markdown on paste:', error);
+            const range = quill.getSelection(true);
+             if (range) quill.insertText(range.index, text, 'user');
+        }
+      }
+    };
+    quill.root.addEventListener('paste', handlePaste);
+    return () => { quill.root.removeEventListener('paste', handlePaste); };
+  }, []);
 
   const showNotification = (message: string) => {
     setNotification(message);
@@ -86,25 +141,17 @@ const EditorPage: React.FC = () => {
 
   const isEditorEmpty = () => {
     const editor = quillRef.current?.getEditor();
-    if (!editor) return true; // Safety check
-    
-    // Check for text content (ignoring whitespace)
+    if (!editor) return true;
     const text = editor.getText().trim();
     if (text.length > 0) return false;
-    
-    // Check for embeds (images, dividers, etc.)
-    // editor.getContents().ops is an array of operations.
-    // Embeds are represented by an insert operation where the value is an object.
     const contents = editor.getContents();
     const hasEmbed = contents.ops?.some((op: any) => typeof op.insert === 'object');
-    
     return !hasEmbed;
   };
 
   const isTitleDuplicate = (candidateTitle: string) => {
     const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
     const normalized = candidateTitle.trim().toLowerCase();
-    // Check if any other note has the same title (case-insensitive)
     return notes.some(n => n.title.trim().toLowerCase() === normalized && n.id !== id);
   };
 
@@ -113,12 +160,10 @@ const EditorPage: React.FC = () => {
         showNotification('Please enter a title before saving.');
         return;
     }
-
     if (isTitleDuplicate(title)) {
         showNotification('A note with this name already exists.');
         return;
     }
-
     if (isEditorEmpty()) {
         showNotification('Note is empty. Please add content.');
         return;
@@ -137,10 +182,8 @@ const EditorPage: React.FC = () => {
         navigate('/');
         return;
     }
-
     let confirmMessage = 'Delete this note?';
     if (cloudSlug) confirmMessage = 'This note is public. Delete it and break the link?';
-
     if (!window.confirm(confirmMessage)) return;
 
     if (cloudSlug && isFirebaseConfigured()) {
@@ -160,7 +203,6 @@ const EditorPage: React.FC = () => {
     const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
     const updatedNotes = notes.filter(note => note.id !== id);
     localStorage.setItem('notes', JSON.stringify(updatedNotes));
-    
     navigate('/');
   };
 
@@ -169,17 +211,14 @@ const EditorPage: React.FC = () => {
         alert("Sharing requires database configuration.");
         return;
     }
-
     if (!title.trim()) {
         showNotification('Please enter a title before sharing.');
         return;
     }
-
     if (isTitleDuplicate(title)) {
         showNotification('A note with this name already exists.');
         return;
     }
-
     if (isEditorEmpty()) {
         showNotification('Cannot share empty note.');
         return;
@@ -235,21 +274,13 @@ const EditorPage: React.FC = () => {
         codeBlockStyle: 'fenced'
     });
     
-    // Custom rule for Quill code blocks to handle them gracefully
     turndownService.addRule('quillCodeBlock', {
-        filter: (node) => {
-            // Quill uses <pre class="ql-syntax"> for code blocks
-            return node.nodeName === 'PRE' && node.classList.contains('ql-syntax');
-        },
-        replacement: (content, node) => {
-            // Use textContent to strip out highlight.js syntax spans if present
-            return '\n```\n' + node.textContent + '\n```\n';
-        }
+        filter: (node) => node.nodeName === 'PRE' && node.classList.contains('ql-syntax'),
+        replacement: (content, node) => '\n```\n' + node.textContent + '\n```\n'
     });
 
     const markdown = turndownService.turndown(quill.root.innerHTML);
     const filename = (title.trim() || 'Untitled') + '.md';
-
     const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -282,9 +313,8 @@ const EditorPage: React.FC = () => {
     }
   };
 
-  // Memoize modules to prevent re-rendering loops in Quill
   const modules = useMemo(() => ({
-    syntax: true, // Enable syntax highlighting module
+    syntax: true, 
     toolbar: [
       [{ 'header': [1, 2, false] }],
       ['bold', 'italic', 'blockquote', 'code-block'],
@@ -294,31 +324,18 @@ const EditorPage: React.FC = () => {
     ],
     keyboard: {
       bindings: {
-        // Auto-format "---" to horizontal rule
         divider: {
-          key: 13, // Enter
+          key: 13,
           collapsed: true,
           prefix: /^---$/,
           handler: function(this: any, range: any, context: any) {
              const quill = this.quill;
              const [line, offset] = quill.getLine(range.index);
-             
-             // Check if the line is exactly "---" and we are at the end of it
              if (line.domNode.textContent.trim() === '---' && offset === 3) {
-                 // Delete the "---" text
                  quill.deleteText(range.index - 3, 3);
-                 
-                 // Insert the divider embed
                  quill.insertEmbed(range.index - 3, 'divider', true, 'user');
-                 
-                 // Insert a newline after the divider so the user can type below it
-                 // We add +1 because the embed takes length 1
                  quill.insertText(range.index - 3 + 1, '\n', 'user');
-                 
-                 // Move cursor to the new line
                  quill.setSelection(range.index - 3 + 2, 0);
-                 
-                 // Prevent default Enter behavior
                  return false;
              }
              return true;
@@ -329,20 +346,20 @@ const EditorPage: React.FC = () => {
   }), []);
 
   return (
-    <div className="flex flex-col h-full mt-4 max-w-3xl mx-auto w-full">
+    <div className="flex flex-col h-full mt-4 max-w-4xl mx-auto w-full">
       {notification && (
-        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 bg-black text-white text-sm py-2 px-6 rounded-full shadow-lg z-50 animate-fade-in-out">
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 bg-black dark:bg-white text-white dark:text-black text-xs font-medium tracking-wide py-2 px-6 rounded-md shadow-lg z-50 animate-fade-in-out">
           {notification}
         </div>
       )}
       
-      {/* Zen Toolbar Area */}
+      {/* Zero Toolbar Area */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         
-        <div className="flex items-center gap-2 w-full md:w-auto flex-grow">
+        <div className="flex items-center gap-4 w-full md:w-auto flex-grow">
              <button 
                 onClick={() => navigate('/')}
-                className="group p-2 -ml-2 text-gray-400 hover:text-openai-text dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-neutral-800"
+                className="group text-gray-400 hover:text-zero-text dark:hover:text-zero-darkText transition-colors"
                 aria-label="Back"
             >
                 <ArrowLeftIcon className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
@@ -351,42 +368,41 @@ const EditorPage: React.FC = () => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Note Title"
-              className="text-4xl font-medium bg-transparent border-none focus:ring-0 p-0 w-full flex-grow text-openai-text dark:text-white placeholder-gray-300 dark:placeholder-gray-700 focus:outline-none"
+              placeholder="Untitled Note"
+              className="text-3xl font-semibold tracking-tight bg-transparent border-none focus:ring-0 p-0 w-full flex-grow text-zero-text dark:text-zero-darkText placeholder-gray-300 dark:placeholder-gray-700 focus:outline-none"
             />
         </div>
         
-        {/* Actions - Minimal Icons */}
-        <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
+        {/* Actions - Monochrome, Sharp, Minimal */}
+        <div className="flex items-center gap-1">
             <button 
               onClick={() => setIsAiModalOpen(true)} 
-              className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors text-openai-text dark:text-white"
-              title="AI Assist"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors text-zero-text dark:text-zero-darkText"
+              title="Ask AI"
             >
-                <SparklesIcon className="h-5 w-5" />
+                <SparklesIcon className="h-4 w-4" />
             </button>
             
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+            <div className="w-px h-4 bg-gray-200 dark:bg-gray-800 mx-2"></div>
 
             <button 
                 onClick={handleShare} 
                 disabled={isPublishing}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`p-2 rounded-md transition-all duration-300 ${
                     cloudSlug 
-                    ? 'text-openai-accent bg-green-50 dark:bg-green-900/10' 
-                    : 'text-openai-text dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800'
+                    ? 'text-zero-accent dark:text-white bg-gray-100 dark:bg-neutral-800' 
+                    : 'text-gray-400 hover:text-zero-text dark:hover:text-white hover:bg-gray-50 dark:hover:bg-neutral-900'
                 }`}
-                title={cloudSlug ? "Update link" : "Make public"}
+                title={cloudSlug ? "Update link" : "Share"}
             >
                 <ShareIcon className="h-4 w-4" />
-                {cloudSlug && <span className="text-xs">Public</span>}
             </button>
             
             {cloudSlug && (
                  <button 
                     onClick={handleStopSharing}
-                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-md transition-colors"
-                    title="Stop sharing"
+                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/10 text-gray-300 hover:text-red-600 rounded-md transition-colors"
+                    title="Unpublish"
                  >
                     <TrashIcon className="h-4 w-4" />
                  </button>
@@ -394,10 +410,10 @@ const EditorPage: React.FC = () => {
 
             <button 
               onClick={handleDownloadMarkdown} 
-              className="p-2 text-openai-text dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
+              className="p-2 text-gray-400 hover:text-zero-text dark:hover:text-white hover:bg-gray-50 dark:hover:bg-neutral-900 rounded-md transition-colors"
               title="Download Markdown"
             >
-              <DownloadIcon className="h-5 w-5" />
+              <DownloadIcon className="h-4 w-4" />
             </button>
             
             <button 
@@ -405,12 +421,12 @@ const EditorPage: React.FC = () => {
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-md transition-colors"
                 title="Delete"
             >
-                <TrashIcon className="h-5 w-5" />
+                <TrashIcon className="h-4 w-4" />
             </button>
 
             <button 
               onClick={handleSave} 
-              className="ml-3 bg-black dark:bg-white text-white dark:text-black font-medium text-sm py-2 px-4 rounded-md hover:opacity-80 transition-opacity"
+              className="ml-4 bg-zero-accent dark:bg-zero-darkAccent text-white dark:text-black font-medium text-xs uppercase tracking-widest py-2 px-5 rounded-md hover:opacity-90 transition-all duration-300 shadow-sm"
             >
               Save
             </button>
@@ -430,25 +446,37 @@ const EditorPage: React.FC = () => {
       </div>
 
       {isAiModalOpen && (
-        <div className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl p-8 w-full max-w-lg border border-gray-100 dark:border-gray-800">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-medium text-openai-text dark:text-white">
-                    Ask AI
+        <div className="fixed inset-0 bg-white/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-2xl p-6 w-full max-w-lg border border-gray-100 dark:border-gray-800 animate-fade-in">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-zero-secondaryText dark:text-zero-darkSecondaryText">
+                    Zero Assistant
                   </h3>
                 </div>
                 <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Draft an email..."
-                    className="w-full h-32 p-0 border-none bg-transparent focus:ring-0 text-lg resize-none placeholder-gray-300 dark:placeholder-gray-600 text-openai-text dark:text-white"
+                    placeholder="Describe what you want to write..."
+                    className="w-full h-24 p-0 border-none bg-transparent focus:ring-0 text-lg resize-none placeholder-gray-300 dark:placeholder-gray-700 text-zero-text dark:text-zero-darkText leading-relaxed"
                     autoFocus
                 />
-                <div className="mt-8 flex justify-end gap-3">
-                    <button onClick={() => setIsAiModalOpen(false)} className="text-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors px-4 py-2">Cancel</button>
-                    <button onClick={handleGenerateAiContent} disabled={isGenerating} className="text-sm bg-openai-accent hover:bg-openai-accentHover text-white px-5 py-2 rounded-md font-medium transition-colors">
-                        {isGenerating ? 'Thinking...' : 'Generate'}
-                    </button>
+                <div className="mt-6 flex justify-between items-center">
+                    <span className="text-xs text-gray-300 dark:text-gray-700">Powered by Gemini</span>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setIsAiModalOpen(false)} 
+                            className="text-xs font-medium text-gray-500 hover:text-black dark:hover:text-white transition-colors px-3 py-2"
+                        >
+                            CANCEL
+                        </button>
+                        <button 
+                            onClick={handleGenerateAiContent} 
+                            disabled={isGenerating} 
+                            className="bg-black dark:bg-white text-white dark:text-black text-xs font-medium tracking-wide px-5 py-2 rounded-md hover:opacity-90 transition-colors"
+                        >
+                            {isGenerating ? 'GENERATING...' : 'GENERATE'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
