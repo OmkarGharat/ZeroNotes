@@ -513,7 +513,7 @@ const EditorPage: React.FC = () => {
       highlight: (text: string) => hljs.highlightAuto(text).value,
     },
     toolbar: [
-      [{ 'header': [1, 2, false] }],
+      [{ 'header': [1, 2, 3, false] }],
       ['bold', 'italic', 'blockquote', 'code-block'],
       [{'list': 'ordered'}, {'list': 'bullet'}],
       ['link'],
