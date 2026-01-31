@@ -97,17 +97,96 @@
     left: 0;
 }
 
-/* 4. Code Block Styling */
+/* 4. Code Block Styling - OpenAI Professional Style */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap');
+
 .ql-snow .ql-editor pre.ql-syntax {
-    background-color: #1a1a1a;
+    background-color: #1e1e1e;
     color: #abb2bf;
-    border-radius: 6px;
-    padding: 20px;
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-    font-size: 0.875rem;
+    border-radius: 8px;
+    padding: 24px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', 'Consolas', monospace;
+    font-size: 0.9em;
+    line-height: 1.6;
     margin-top: 2em;
     margin-bottom: 2em;
-    border: 1px solid #333;
+    border: 1px solid #2d2d2d;
+    position: relative;
+    overflow-x: auto;
+    tab-size: 4;
+}
+
+/* Syntax Highlighting - Muted Professional Palette */
+.ql-syntax .hljs-keyword,
+.ql-syntax .hljs-built_in,
+.ql-syntax .hljs-type {
+    color: #c678dd;
+    /* Soft purple for keywords */
+}
+
+.ql-syntax .hljs-string,
+.ql-syntax .hljs-attr {
+    color: #98c379;
+    /* Soft green for strings */
+}
+
+.ql-syntax .hljs-number,
+.ql-syntax .hljs-literal {
+    color: #d19a66;
+    /* Soft orange for numbers */
+}
+
+.ql-syntax .hljs-function,
+.ql-syntax .hljs-title {
+    color: #61afef;
+    /* Soft blue for functions */
+}
+
+.ql-syntax .hljs-comment {
+    color: #5c6370;
+    /* Muted gray for comments */
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.ql-syntax .hljs-variable,
+.ql-syntax .hljs-params {
+    color: #e06c75;
+    /* Soft red for variables */
+}
+
+.ql-syntax .hljs-operator,
+.ql-syntax .hljs-punctuation {
+    color: #56b6c2;
+    /* Cyan for operators */
+}
+
+/* Copy button - appears on hover */
+.ql-editor pre.ql-syntax::before {
+    content: 'Copy';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #abb2bf;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+    backdrop-filter: blur(10px);
+}
+
+.ql-editor pre.ql-syntax:hover::before {
+    opacity: 1;
+}
+
+.ql-editor pre.ql-syntax::before:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 /* 5. Horizontal Rule Styling */
