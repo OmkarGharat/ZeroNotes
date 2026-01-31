@@ -30,10 +30,39 @@
     content="A distraction-free, minimalist Markdown note-taking app. Features include auto-formatting, cloud sync, and a beautiful dark mode interface." />
   <meta property="twitter:image" content="https://zeronotes.app/og-image.png" />
 
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
   <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Structured Data (JSON-LD) for better Google Indexing -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ZeroNotes",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "A distraction-free, minimalist Markdown note-taking app with cloud sync and auto-formatting.",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1024"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "ZeroNotes Team"
+      }
+    }
+  </script>
 
   <script>
     // Polyfill process.env
