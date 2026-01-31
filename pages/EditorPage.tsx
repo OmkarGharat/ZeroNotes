@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
+// @ts-ignore
 import TurndownService from 'turndown';
 import { Marked } from 'marked';
 // CSS is loaded in index.html
@@ -11,7 +12,7 @@ import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '.
 import { ArrowLeftIcon, DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from '../components/Icons';
 
 // Access Quill instance from ReactQuill
-const Quill = ReactQuill.Quill;
+const Quill = (ReactQuill as any).Quill;
 
 // Register a custom divider blot (hr)
 const BlockEmbed = Quill.import('blots/block/embed');
@@ -59,7 +60,7 @@ const EditorPage: React.FC = () => {
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
 
-    const marked = new Marked({ gfm: true, breaks: true });
+    const marked = new Marked({ gfm: true, breaks: true } as any);
     marked.use({
         renderer: {
             code(code, language) {
@@ -77,7 +78,7 @@ const EditorPage: React.FC = () => {
     });
 
     const handlePaste = (e: ClipboardEvent) => {
-      const clipboardData = e.clipboardData;
+      const clipboardData = (e as any).clipboardData;
       if (!clipboardData) return;
       const text = clipboardData.getData('text/plain');
       if (!text) return;
@@ -359,6 +360,41 @@ const EditorPage: React.FC = () => {
                     return false;
                 }
                 return true;
+            }
+        },
+        smartList: {
+            key: 32,
+            collapsed: true,
+            prefix: /^(\*|-)$/,
+            handler: function(this: any, range: any, context: any) {
+                const quill = this.quill;
+                const format = quill.getFormat(range);
+                
+                if (format.list || format['code-block'] || format.header || format.blockquote) {
+                    return true;
+                }
+
+                quill.deleteText(range.index - 1, 1);
+                // Fixed index: range.index - 1
+                quill.formatLine(range.index - 1, 1, 'list', 'bullet');
+                return false;
+            }
+        },
+        orderedList: {
+            key: 32,
+            collapsed: true,
+            prefix: /^1\.$/,
+            handler: function(this: any, range: any, context: any) {
+                const quill = this.quill;
+                const format = quill.getFormat(range);
+                
+                if (format.list || format['code-block'] || format.header || format.blockquote) {
+                    return true;
+                }
+
+                quill.deleteText(range.index - 2, 2);
+                quill.formatLine(range.index - 2, 1, 'list', 'ordered');
+                return false;
             }
         },
         divider: {
