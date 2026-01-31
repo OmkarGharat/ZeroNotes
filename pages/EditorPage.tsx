@@ -474,7 +474,7 @@ const EditorPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full mt-4 max-w-4xl mx-auto w-full">
+    <div className="flex flex-col h-full mt-12 max-w-4xl mx-auto w-full">
       <ConfirmationModal 
         isOpen={modalState.isOpen}
         title={modalState.title}
