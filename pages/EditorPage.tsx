@@ -10,7 +10,8 @@ import hljs from 'highlight.js';
 import type { Note } from '../types';
 
 import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
-import { ArrowLeftIcon, DownloadIcon, ShareIcon, TrashIcon } from '../components/Icons';
+import { ArrowLeft, Download, Share2, Trash2 } from 'lucide-react';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 // Access Quill instance from ReactQuill
 const Quill = (ReactQuill as any).Quill;
@@ -39,6 +40,36 @@ const EditorPage: React.FC = () => {
   const [cloudSlug, setCloudSlug] = useState<string | undefined>(undefined);
   const [isPublishing, setIsPublishing] = useState(false);
   const [notification, setNotification] = useState('');
+  
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const openModal = (
+    title: string, 
+    message: string, 
+    onConfirm: () => void, 
+    isDestructive = false,
+    confirmText = 'Confirm',
+    cancelText = 'Cancel'
+  ) => {
+    setModalState({ isOpen: true, title, message, onConfirm, isDestructive, confirmText, cancelText });
+  };
+
+  const closeModal = () => {
+    setModalState(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const handleModalConfirm = () => {
+    modalState.onConfirm();
+    closeModal();
+  };
 
   // 1. Data Loading
   useEffect(() => {
@@ -291,6 +322,27 @@ const EditorPage: React.FC = () => {
   };
 
   // 4. Action Handlers
+  const handleBack = () => {
+    // Only check for new notes (!id)
+    if (!id) {
+        const hasTitle = title.trim().length > 0;
+        // isEditorEmpty returns true if empty, so !isEditorEmpty means we have content
+        const hasContent = !isEditorEmpty();
+
+        if (hasTitle || hasContent) {
+            openModal(
+                "Discard Unsaved Note?",
+                "You have started writing a new note. If you leave now, your changes will be lost.",
+                () => navigate('/'),
+                true,
+                "Discard"
+            );
+            return;
+        }
+    }
+    navigate('/');
+  };
+
   const handleSave = () => {
     if (!title.trim()) { showNotification('Please enter a title before saving.'); return; }
     if (isTitleDuplicate(title)) { showNotification('A note with this name already exists.'); return; }
@@ -300,22 +352,39 @@ const EditorPage: React.FC = () => {
     showNotification('Saved');
   };
 
-  const handleDelete = async () => {
-    if (!id) {
-        if ((title || content) && !window.confirm("Discard unsaved changes?")) return;
-        navigate('/');
-        return;
-    }
-    if (!window.confirm(cloudSlug ? 'This note is public. Delete it and break the link?' : 'Delete this note?')) return;
-
-    if (cloudSlug && isFirebaseConfigured()) {
+  const executeDelete = async (forceLocal = false) => {
+    if (cloudSlug && isFirebaseConfigured() && !forceLocal) {
         try { await deleteNoteFromCloud(cloudSlug); } 
-        catch (_) { if (!window.confirm("Could not remove public link. Delete local copy anyway?")) return; }
+        catch (_) { 
+            // Close current modal first if open (state update is async, but we can overwrite)
+            openModal(
+                "Cloud Error", 
+                "Could not remove public link. Delete local copy anyway?", 
+                () => executeDelete(true), 
+                true, 
+                "Force Delete"
+            );
+            return; 
+        }
     }
 
     const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
     localStorage.setItem('notes', JSON.stringify(notes.filter(note => note.id !== id)));
     navigate('/');
+  };
+
+  const handleDelete = async () => {
+    if (!id) {
+        if (title || content) {
+            openModal("Discard Changes", "Are you sure you want to discard your unsaved changes?", () => navigate('/'), true, "Discard");
+            return;
+        }
+        navigate('/');
+        return;
+    }
+    
+    const msg = cloudSlug ? 'This note is public. Delete it and break the public link?' : 'Are you sure you want to permanently delete this note?';
+    openModal("Delete Note", msg, () => executeDelete(), true, "Delete");
   };
 
   const handleShare = async () => {
@@ -337,20 +406,30 @@ const EditorPage: React.FC = () => {
     finally { setIsPublishing(false); }
   };
 
-  const handleStopSharing = async () => {
-    if (!cloudSlug || !window.confirm("Stop sharing?")) return;
+  const executeStopSharing = async (forceLocal = false) => {
+    if (!cloudSlug) return;
     setIsPublishing(true);
     try {
-        await deleteNoteFromCloud(cloudSlug);
+        if (!forceLocal) await deleteNoteFromCloud(cloudSlug);
         setCloudSlug(undefined);
         updateLocalStorage(null);
         showNotification("Unshared");
     } catch (err) {
-        if(window.confirm("Cloud error. Unlink locally?")) {
-            setCloudSlug(undefined);
-            updateLocalStorage(null);
+        if (!forceLocal) {
+            openModal(
+                "Cloud Error",
+                "Could not unpublish from cloud. Unlink locally?",
+                () => executeStopSharing(true),
+                true,
+                "Unlink"
+            );
         }
     } finally { setIsPublishing(false); }
+  };
+
+  const handleStopSharing = async () => {
+    if (!cloudSlug) return;
+    openModal("Stop Sharing", "This will remove the public link. The note will remain in your library.", () => executeStopSharing(), true, "Unpublish");
   };
 
   const handleDownloadMarkdown = () => {
@@ -397,6 +476,17 @@ const EditorPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full mt-4 max-w-4xl mx-auto w-full">
+      <ConfirmationModal 
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={handleModalConfirm}
+        onCancel={closeModal}
+        isDestructive={modalState.isDestructive}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+      />
+
       {notification && (
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 bg-black dark:bg-white text-white dark:text-black text-xs font-medium tracking-wide py-2 px-6 rounded-md shadow-lg z-50">
           {notification}
@@ -405,8 +495,8 @@ const EditorPage: React.FC = () => {
       
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4 w-full md:w-auto flex-grow">
-             <button onClick={() => navigate('/')} className="group text-gray-400 hover:text-zero-text transition-colors">
-                <ArrowLeftIcon className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
+             <button onClick={handleBack} className="group text-gray-400 hover:text-zero-text transition-colors">
+                <ArrowLeft className="h-6 w-6 stroke-[1.5] group-hover:-translate-x-0.5 transition-transform" />
             </button>
             <input
               type="text"
@@ -417,20 +507,37 @@ const EditorPage: React.FC = () => {
             />
         </div>
         
-        <div className="flex items-center gap-1">
-            <button onClick={handleShare} disabled={isPublishing} className={`p-2 rounded-md ${cloudSlug ? 'text-zero-accent bg-gray-100 dark:bg-neutral-800' : 'text-gray-400 hover:text-zero-text'}`} title="Share">
-                <ShareIcon className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+            <button 
+                onClick={handleShare} 
+                disabled={isPublishing} 
+                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${cloudSlug ? 'text-zero-accent bg-gray-100 dark:bg-neutral-800' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`} 
+                title="Share"
+            >
+                <Share2 className="h-5 w-5 stroke-[1.5]" />
             </button>
             {cloudSlug && (
-                 <button onClick={handleStopSharing} className="p-2 text-gray-300 hover:text-red-600 rounded-md" title="Unpublish">
-                    <TrashIcon className="h-4 w-4" />
+                 <button 
+                    onClick={handleStopSharing} 
+                    className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 text-neutral-400 hover:text-white hover:bg-neutral-800" 
+                    title="Unpublish"
+                >
+                    <Trash2 className="h-5 w-5 stroke-[1.5]" />
                  </button>
             )}
-            <button onClick={handleDownloadMarkdown} className="p-2 text-gray-400 hover:text-zero-text rounded-md" title="Download">
-              <DownloadIcon className="h-4 w-4" />
+            <button 
+                onClick={handleDownloadMarkdown} 
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 text-neutral-400 hover:text-white hover:bg-neutral-800"
+                title="Download"
+            >
+              <Download className="h-5 w-5 stroke-[1.5]" />
             </button>
-            <button onClick={handleDelete} className="p-2 text-gray-400 hover:text-red-600 rounded-md" title="Delete">
-                <TrashIcon className="h-4 w-4" />
+            <button 
+                onClick={handleDelete} 
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 text-neutral-400 hover:text-white hover:bg-red-900/40 hover:!text-white" 
+                title="Delete"
+            >
+                <Trash2 className="h-5 w-5 stroke-[1.5]" />
             </button>
             <button onClick={handleSave} className="ml-4 bg-zero-accent dark:bg-zero-darkAccent text-white dark:text-black font-medium text-xs uppercase tracking-widest py-2 px-5 rounded-md hover:opacity-90 transition-all shadow-sm">
               Save

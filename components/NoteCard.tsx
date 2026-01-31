@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Note } from '../types';
-import { TrashIcon } from './Icons';
+import { Trash2 } from 'lucide-react';
 
 interface NoteCardProps {
   note: Note;
@@ -18,15 +18,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    let message = 'Delete this note?';
-    if (note.cloudSlug) {
-        message = 'This note is public. Delete it?';
-    }
-    
-    if (window.confirm(message)) {
-      onDelete(note.id);
-    }
+    onDelete(note.id);
   };
 
   return (
@@ -41,10 +33,10 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
             {/* Delete button appears on hover */}
             <button
               onClick={handleDelete}
-              className="text-zero-secondaryText hover:text-red-500 transition-colors absolute right-4 top-4 opacity-0 group-hover:opacity-100 z-10"
+              className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 z-10 w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-red-500 transition-all duration-200"
               aria-label="Delete note"
             >
-              <TrashIcon className="h-4 w-4" />
+              <Trash2 className="h-4 w-4 stroke-[1.5]" />
             </button>
         </div>
 

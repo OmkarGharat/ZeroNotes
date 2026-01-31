@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,7 +99,6 @@
 }
 
 /* 4. Code Block Styling - OpenAI Professional Style */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap');
 
 .ql-snow .ql-editor pre.ql-syntax {
     background-color: #1e1e1e;

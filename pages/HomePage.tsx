@@ -2,12 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Note } from '../types';
 import NoteCard from '../components/NoteCard';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PlusIcon, NoteIcon, SearchIcon } from '../components/Icons';
 import { deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 
 const HomePage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const openModal = (
+    title: string, 
+    message: string, 
+    onConfirm: () => void, 
+    isDestructive = false,
+    confirmText = 'Confirm',
+    cancelText = 'Cancel'
+  ) => {
+    setModalState({ isOpen: true, title, message, onConfirm, isDestructive, confirmText, cancelText });
+  };
+
+  const closeModal = () => {
+    setModalState(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const handleModalConfirm = () => {
+    modalState.onConfirm();
+    closeModal();
+  };
 
   useEffect(() => {
     const savedNotes = JSON.parse(localStorage.getItem('notes') || '[]') as Note[];
@@ -16,26 +47,41 @@ const HomePage: React.FC = () => {
     setNotes(savedNotes);
   }, []);
 
-  const handleDeleteNote = async (id: string) => {
+  const executeDelete = async (id: string, forceLocal = false) => {
     const noteToDelete = notes.find(n => n.id === id);
     if (!noteToDelete) return;
-    
-    if (noteToDelete.cloudSlug && isFirebaseConfigured()) {
+
+    if (noteToDelete.cloudSlug && isFirebaseConfigured() && !forceLocal) {
         try {
             await deleteNoteFromCloud(noteToDelete.cloudSlug);
         } catch (error) {
             console.error(error);
-            const forceDelete = window.confirm(
-                "Failed to remove the shared public link.\n\n" +
-                "Delete locally anyway?"
+            // Re-open modal for error handling
+            openModal(
+                "Cloud Error",
+                "Failed to remove the shared public link. Delete locally anyway?",
+                () => executeDelete(id, true),
+                true,
+                "Force Delete"
             );
-            if (!forceDelete) return;
+            return;
         }
     }
 
     const updatedNotes = notes.filter(note => note.id !== id);
     localStorage.setItem('notes', JSON.stringify(updatedNotes));
     setNotes(updatedNotes);
+  };
+
+  const handleDeleteNote = (id: string) => {
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+
+    const message = note.cloudSlug 
+        ? 'This note is public. Delete it and break the public link?' 
+        : 'Are you sure you want to permanently delete this note?';
+    
+    openModal("Delete Note", message, () => executeDelete(id), true, "Delete");
   };
 
   const filteredNotes = notes.filter(note => {
@@ -95,6 +141,16 @@ const HomePage: React.FC = () => {
             <p className="text-sm">No results for "{searchQuery}"</p>
         </div>
       )}
+      <ConfirmationModal 
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={handleModalConfirm}
+        onCancel={closeModal}
+        isDestructive={modalState.isDestructive}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+      />
     </div>
   );
 };
