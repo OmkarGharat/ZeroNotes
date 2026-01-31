@@ -456,8 +456,7 @@ const EditorPage: React.FC = () => {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
       ['bold', 'italic', 'blockquote', 'code-block'],
-      [{'list': 'ordered'}, {'list': 'bullet'}],
-      ['link'], ['clean']
+      [{'list': 'ordered'}, {'list': 'bullet'}]
     ],
   }), []);
 

@@ -110,7 +110,7 @@ const HomePage: React.FC = () => {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-zero-surface dark:bg-zero-darkSurface border border-transparent focus:bg-white dark:focus:bg-zero-darkBg border-zero-border dark:border-zero-darkBorder rounded-md text-sm focus:outline-none focus:border-zero-border dark:focus:border-neutral-600 transition-all text-zero-text dark:text-zero-darkText placeholder-gray-400"
+                    className="w-full pl-9 pr-4 py-2 bg-zero-surface dark:bg-zero-darkSurface border border-transparent focus:bg-white dark:focus:bg-zero-darkBg rounded-md text-sm focus:outline-none focus:ring-0 focus:border-zero-border dark:focus:border-neutral-600 transition-colors duration-200 text-zero-text dark:text-zero-darkText placeholder-gray-400"
                 />
              </div>
             <Link

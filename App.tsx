@@ -41,9 +41,10 @@ function App() {
         {/* Minimal Header with subtle border */}
         <header className="border-b border-zero-border dark:border-zero-darkBorder sticky top-0 z-10 bg-zero-bg/80 dark:bg-zero-darkBg/80 backdrop-blur-md transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <Link to="/" className="group flex items-center gap-2.5">
-               <LogoIcon className="w-5 h-5 text-zero-accent dark:text-zero-darkAccent" />
-               <span className="font-semibold text-base tracking-tight text-zero-text dark:text-zero-darkText">ZeroNotes</span>
+            <Link to="/" className="group flex items-baseline gap-2 opacity-90 hover:opacity-100 transition-opacity">
+                <LogoIcon className="w-5 h-5 self-center text-black dark:text-white" />
+                <span className="font-semibold text-xl tracking-tighter">ZeroNotes</span>
+                <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-medium ml-1">by Omkar</span>
             </Link>
 
             <button 
@@ -69,9 +70,10 @@ function App() {
         </main>
         
         {/* Footer - Minimal */}
-        <footer className="py-8 text-center border-t border-zero-border dark:border-zero-darkBorder mt-auto transition-colors duration-300">
-            <p className="text-[10px] uppercase tracking-widest text-zero-secondaryText dark:text-zero-darkSecondaryText font-medium cursor-default">
-                ZeroNotes &copy; {new Date().getFullYear()}
+        {/* Refined Footer */}
+        <footer className="py-12 mt-auto text-center opacity-40 hover:opacity-80 transition-opacity duration-700">
+            <p className="text-[10px] tracking-[0.3em] uppercase font-medium text-neutral-500 dark:text-neutral-400 cursor-default">
+                ZeroNotes © 2026 — Developed by Omkar
             </p>
         </footer>
       </div>
