@@ -54,7 +54,7 @@ const EditorPage: React.FC = () => {
     }
   }, [id]);
 
-  // Handle Markdown Paste (logic remains same)
+  // Handle Markdown Paste
   useEffect(() => {
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
@@ -105,8 +105,11 @@ const EditorPage: React.FC = () => {
         }
       }
     };
+
     quill.root.addEventListener('paste', handlePaste);
-    return () => { quill.root.removeEventListener('paste', handlePaste); };
+    return () => { 
+        quill.root.removeEventListener('paste', handlePaste); 
+    };
   }, []);
 
   const showNotification = (message: string) => {
@@ -324,6 +327,40 @@ const EditorPage: React.FC = () => {
     ],
     keyboard: {
       bindings: {
+        // Fix for selection stuck on empty note (Backspace)
+        emptyBackspace: {
+            key: 8,
+            handler: function(this: any, range: any, context: any) {
+                const quill = this.quill;
+                // If document is empty (length 1 for trailing newline) and we have a selection
+                if (quill.getLength() <= 1 && range.length > 0) {
+                    quill.setSelection(0);
+                    // Also strip formatting to ensure clean state
+                    quill.formatLine(0, 1, 'header', false);
+                    quill.formatLine(0, 1, 'list', false);
+                    quill.formatLine(0, 1, 'code-block', false);
+                    quill.formatLine(0, 1, 'blockquote', false);
+                    return false; // Prevent default
+                }
+                return true; // Allow default
+            }
+        },
+        // Fix for selection stuck on empty note (Delete)
+        emptyDelete: {
+            key: 46,
+            handler: function(this: any, range: any, context: any) {
+                const quill = this.quill;
+                if (quill.getLength() <= 1 && range.length > 0) {
+                    quill.setSelection(0);
+                    quill.formatLine(0, 1, 'header', false);
+                    quill.formatLine(0, 1, 'list', false);
+                    quill.formatLine(0, 1, 'code-block', false);
+                    quill.formatLine(0, 1, 'blockquote', false);
+                    return false;
+                }
+                return true;
+            }
+        },
         divider: {
           key: 13,
           collapsed: true,
@@ -344,6 +381,26 @@ const EditorPage: React.FC = () => {
       }
     }
   }), []);
+
+  const handleEditorChange = (newContent: string, delta: any, source: string, editor: any) => {
+    setContent(newContent);
+    
+    // Check if the change was a deletion (delta.ops contains a 'delete' op)
+    const isDelete = delta.ops && delta.ops.some((op: any) => op.delete);
+
+    // Only reset formatting if the user CLEARED the editor via deletion (e.g. Backspace/Delete)
+    // We must NOT reset if the user simply clicked a toolbar button (which changes format but doesn't delete)
+    if (source === 'user' && editor.getText().length <= 1 && isDelete) {
+        // Use the ref to get the full Quill instance which allows imperative formatting
+        const quillInstance = quillRef.current?.getEditor();
+        if (quillInstance) {
+            quillInstance.formatLine(0, 1, 'header', false);
+            quillInstance.formatLine(0, 1, 'code-block', false);
+            quillInstance.formatLine(0, 1, 'list', false);
+            quillInstance.formatLine(0, 1, 'blockquote', false);
+        }
+    }
+  };
 
   return (
     <div className="flex flex-col h-full mt-4 max-w-4xl mx-auto w-full">
@@ -438,7 +495,7 @@ const EditorPage: React.FC = () => {
           ref={quillRef}
           theme="snow"
           value={content}
-          onChange={setContent}
+          onChange={handleEditorChange}
           modules={modules}
           placeholder="Start writing..."
           className="h-full"

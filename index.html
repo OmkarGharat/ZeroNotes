@@ -117,17 +117,22 @@
         /* 1. Distinct but Minimal Toolbar */
         .ql-toolbar.ql-snow {
             border: none !important;
-            border-bottom: 1px solid transparent !important; /* Floating feel */
-            background-color: transparent !important; 
-            padding: 8px 0 !important;
+            background-color: #FFFFFF !important;
+            border-radius: 12px;
+            padding: 12px 16px !important;
             margin-bottom: 32px;
-            opacity: 0.6;
-            transition: opacity 0.3s ease;
-        }
-        .ql-toolbar.ql-snow:hover {
-            opacity: 1;
+            box-shadow: rgba(99, 99, 99, 0.1) 0px 2px 8px 0px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
         }
         
+        .dark .ql-toolbar.ql-snow {
+            background-color: #171717 !important;
+            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 8px 0px;
+        }
+
         /* 2. Editor Container */
         .ql-container.ql-snow {
             border: none !important;
@@ -223,6 +228,7 @@
         .dark .ql-snow .ql-picker-options {
             background-color: #171717 !important;
             border: 1px solid #2D2D2D !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
         .dark .ql-snow .ql-picker-item {
             color: #999999 !important;
