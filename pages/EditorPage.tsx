@@ -253,19 +253,27 @@ const EditorPage: React.FC = () => {
         }
     );
 
-    // 4. Divider with '---' + Enter
+    // 4. Divider with '---' + Space (changed from Enter for reliability)
     quill.keyboard.addBinding(
-        { key: 13, collapsed: true, prefix: /^---$/ } as any,
+        { key: 32, collapsed: true } as any, // Space key
         function(range: any, context: any) {
-            const [line] = quill.getLine(range.index);
-            if (line.domNode.textContent.trim() === '---') {
-                quill.deleteText(range.index - 3, 3);
-                quill.insertEmbed(range.index - 3, 'divider', true, 'user');
-                quill.insertText(range.index - 3 + 1, '\n', 'user');
-                quill.setSelection(range.index - 3 + 2, 0);
-                return false;
+            const [line, offset] = quill.getLine(range.index);
+            const lineStart = range.index - offset;
+            const textBeforeCursor = quill.getText(lineStart, offset);
+
+            // Check if we just typed "---" before pressing space
+            if (textBeforeCursor === '---') {
+                // Delete the "---"
+                quill.deleteText(lineStart, 3);
+                // Insert the divider
+                quill.insertEmbed(lineStart, 'divider', true, 'user');
+                // Insert a newline to move to next line
+                quill.insertText(lineStart + 1, '\n', 'user');
+                // Position cursor at the new line
+                quill.setSelection(lineStart + 2, 0);
+                return false; // Prevent default space insertion
             }
-            return true;
+            return true; // Allow other space triggers to process
         }
     );
 
