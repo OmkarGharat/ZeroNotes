@@ -10,7 +10,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
-      Sitemap({ hostname: 'https://zeronotes.app' })
+      Sitemap({
+        hostname: 'https://zeronotes.vercel.app',
+        exclude: ['/google3e6afdea06b1bb18.html']
+      })
     ],
     build: {
       outDir: 'dist',
