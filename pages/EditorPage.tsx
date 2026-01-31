@@ -7,7 +7,7 @@ import { Marked } from 'marked';
 // CSS is loaded in index.html
 
 import type { Note } from '../types';
-import { generateText } from '../services/geminiService';
+
 import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 import { ArrowLeftIcon, DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from '../components/Icons';
 
@@ -36,9 +36,7 @@ const EditorPage: React.FC = () => {
   const [content, setContent] = useState('');
   const [cloudSlug, setCloudSlug] = useState<string | undefined>(undefined);
   
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+
   const [isPublishing, setIsPublishing] = useState(false);
   const [notification, setNotification] = useState('');
   
@@ -106,6 +104,56 @@ const EditorPage: React.FC = () => {
         }
       }
     };
+
+    // List Auto-formatting Bindings
+    // We add these imperatively to ensure they are registered correctly on the instance
+    
+    // 1. Bullet List with '* '
+    quill.keyboard.addBinding(
+        { key: ' ', collapsed: true, prefix: /^\*$/ } as any,
+        function(range: any, context: any) {
+            quill.deleteText(range.index - 1, 1);
+            quill.formatLine(range.index - 1, 1, 'list', 'bullet');
+            return false;
+        }
+    );
+
+    // 2. Bullet List with '- '
+    quill.keyboard.addBinding(
+        { key: ' ', collapsed: true, prefix: /^-$/ } as any,
+        function(range: any, context: any) {
+            quill.deleteText(range.index - 1, 1);
+            quill.formatLine(range.index - 1, 1, 'list', 'bullet');
+            return false;
+        }
+    );
+
+    // 3. Ordered List with '1. '
+    quill.keyboard.addBinding(
+        { key: ' ', collapsed: true, prefix: /^1\.$/ } as any,
+        function(range: any, context: any) {
+            quill.deleteText(range.index - 2, 2);
+            quill.formatLine(range.index - 2, 1, 'list', 'ordered');
+            return false;
+        }
+    );
+
+    // 4. Divider with '---' + Enter
+    quill.keyboard.addBinding(
+        { key: 13, collapsed: true, prefix: /^---$/ } as any,
+        function(range: any, context: any) {
+            const [line] = quill.getLine(range.index);
+            if (line.domNode.textContent.trim() === '---') {
+                quill.deleteText(range.index - 3, 3);
+                quill.insertEmbed(range.index - 3, 'divider', true, 'user');
+                quill.insertText(range.index - 3 + 1, '\n', 'user');
+                quill.setSelection(range.index - 3 + 2, 0);
+                return false;
+            }
+            return true;
+        }
+    );
+
 
     quill.root.addEventListener('paste', handlePaste);
     return () => { 
@@ -297,25 +345,7 @@ const EditorPage: React.FC = () => {
     showNotification('Downloaded Markdown');
   };
 
-  const handleGenerateAiContent = async () => {
-    if (!aiPrompt.trim()) return;
-    setIsGenerating(true);
-    try {
-        const generatedContent = await generateText(aiPrompt);
-        const quill = quillRef.current?.getEditor();
-        if (quill) {
-            const range = quill.getSelection(true);
-            quill.insertText(range.index, `\n${generatedContent}\n`, 'user');
-        }
-    } catch (error) {
-        console.error("AI generation failed:", error);
-        showNotification('AI Error');
-    } finally {
-        setIsGenerating(false);
-        setAiPrompt('');
-        setIsAiModalOpen(false);
-    }
-  };
+
 
   const modules = useMemo(() => ({
     syntax: true, 
@@ -326,96 +356,7 @@ const EditorPage: React.FC = () => {
       ['link'],
       ['clean']
     ],
-    keyboard: {
-      bindings: {
-        // Fix for selection stuck on empty note (Backspace)
-        emptyBackspace: {
-            key: 8,
-            handler: function(this: any, range: any, context: any) {
-                const quill = this.quill;
-                // If document is empty (length 1 for trailing newline) and we have a selection
-                if (quill.getLength() <= 1 && range.length > 0) {
-                    quill.setSelection(0);
-                    // Also strip formatting to ensure clean state
-                    quill.formatLine(0, 1, 'header', false);
-                    quill.formatLine(0, 1, 'list', false);
-                    quill.formatLine(0, 1, 'code-block', false);
-                    quill.formatLine(0, 1, 'blockquote', false);
-                    return false; // Prevent default
-                }
-                return true; // Allow default
-            }
-        },
-        // Fix for selection stuck on empty note (Delete)
-        emptyDelete: {
-            key: 46,
-            handler: function(this: any, range: any, context: any) {
-                const quill = this.quill;
-                if (quill.getLength() <= 1 && range.length > 0) {
-                    quill.setSelection(0);
-                    quill.formatLine(0, 1, 'header', false);
-                    quill.formatLine(0, 1, 'list', false);
-                    quill.formatLine(0, 1, 'code-block', false);
-                    quill.formatLine(0, 1, 'blockquote', false);
-                    return false;
-                }
-                return true;
-            }
-        },
-        smartList: {
-            key: 32,
-            collapsed: true,
-            prefix: /^(\*|-)$/,
-            handler: function(this: any, range: any, context: any) {
-                const quill = this.quill;
-                const format = quill.getFormat(range);
-                
-                if (format.list || format['code-block'] || format.header || format.blockquote) {
-                    return true;
-                }
 
-                quill.deleteText(range.index - 1, 1);
-                // Fixed index: range.index - 1
-                quill.formatLine(range.index - 1, 1, 'list', 'bullet');
-                return false;
-            }
-        },
-        orderedList: {
-            key: 32,
-            collapsed: true,
-            prefix: /^1\.$/,
-            handler: function(this: any, range: any, context: any) {
-                const quill = this.quill;
-                const format = quill.getFormat(range);
-                
-                if (format.list || format['code-block'] || format.header || format.blockquote) {
-                    return true;
-                }
-
-                quill.deleteText(range.index - 2, 2);
-                quill.formatLine(range.index - 2, 1, 'list', 'ordered');
-                return false;
-            }
-        },
-        divider: {
-          key: 13,
-          collapsed: true,
-          prefix: /^---$/,
-          handler: function(this: any, range: any, context: any) {
-             const quill = this.quill;
-             const [line, offset] = quill.getLine(range.index);
-             if (line.domNode.textContent.trim() === '---' && offset === 3) {
-                 quill.deleteText(range.index - 3, 3);
-                 quill.insertEmbed(range.index - 3, 'divider', true, 'user');
-                 quill.insertText(range.index - 3 + 1, '\n', 'user');
-                 quill.setSelection(range.index - 3 + 2, 0);
-                 return false;
-             }
-             return true;
-          }
-        }
-      }
-    }
   }), []);
 
   const handleEditorChange = (newContent: string, delta: any, source: string, editor: any) => {
@@ -468,15 +409,7 @@ const EditorPage: React.FC = () => {
         
         {/* Actions - Monochrome, Sharp, Minimal */}
         <div className="flex items-center gap-1">
-            <button 
-              onClick={() => setIsAiModalOpen(true)} 
-              className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors text-zero-text dark:text-zero-darkText"
-              title="Ask AI"
-            >
-                <SparklesIcon className="h-4 w-4" />
-            </button>
-            
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-800 mx-2"></div>
+
 
             <button 
                 onClick={handleShare} 
@@ -538,42 +471,7 @@ const EditorPage: React.FC = () => {
         />
       </div>
 
-      {isAiModalOpen && (
-        <div className="fixed inset-0 bg-white/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-2xl p-6 w-full max-w-lg border border-gray-100 dark:border-gray-800 animate-fade-in">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-zero-secondaryText dark:text-zero-darkSecondaryText">
-                    Zero Assistant
-                  </h3>
-                </div>
-                <textarea
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Describe what you want to write..."
-                    className="w-full h-24 p-0 border-none bg-transparent focus:ring-0 text-lg resize-none placeholder-gray-300 dark:placeholder-gray-700 text-zero-text dark:text-zero-darkText leading-relaxed"
-                    autoFocus
-                />
-                <div className="mt-6 flex justify-between items-center">
-                    <span className="text-xs text-gray-300 dark:text-gray-700">Powered by Gemini</span>
-                    <div className="flex gap-3">
-                        <button 
-                            onClick={() => setIsAiModalOpen(false)} 
-                            className="text-xs font-medium text-gray-500 hover:text-black dark:hover:text-white transition-colors px-3 py-2"
-                        >
-                            CANCEL
-                        </button>
-                        <button 
-                            onClick={handleGenerateAiContent} 
-                            disabled={isGenerating} 
-                            className="bg-black dark:bg-white text-white dark:text-black text-xs font-medium tracking-wide px-5 py-2 rounded-md hover:opacity-90 transition-colors"
-                        >
-                            {isGenerating ? 'GENERATING...' : 'GENERATE'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
+
     </div>
   );
 };

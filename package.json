@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.39.0",
     "firebase": "^10.8.1",
     "lodash": "^4.17.23",
     "marked": "^12.0.0",
