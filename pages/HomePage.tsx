@@ -106,7 +106,7 @@ const HomePage: React.FC = () => {
                     className="h-full w-auto object-contain" 
                 />
             </div>
-            <p className="text-align-centertext-zero-secondaryText dark:text-zero-darkSecondaryText text-sm max-w-md leading-relaxed ml-1">
+            <p className="text-center text-zero-secondaryText dark:text-zero-darkSecondaryText text-sm max-w-md leading-relaxed ml-1">
                 Where clarity begins...
             </p>
         </div>
@@ -142,7 +142,7 @@ const HomePage: React.FC = () => {
       </div>
 
       {notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-40 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-lg">
+        <div className="flex flex-col items-center justify-center py-20 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-lg">
           <div className="opacity-50 flex flex-col items-center">
             <div className="mb-4 text-zero-secondaryText dark:text-zero-darkSecondaryText">
                 <NoteIcon className="h-16 w-16 stroke-[0.5]" />
