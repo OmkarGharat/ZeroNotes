@@ -2,7 +2,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import 'react-quill/dist/quill.snow.css';
+import 'highlight.js/styles/atom-one-dark.css';
 import './index.css';
+
+import hljs from 'highlight.js';
+(window as any).hljs = hljs;
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

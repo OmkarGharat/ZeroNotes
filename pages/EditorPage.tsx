@@ -4,6 +4,7 @@ import ReactQuill from 'react-quill';
 // @ts-ignore
 import TurndownService from 'turndown';
 import { Marked } from 'marked';
+import hljs from 'highlight.js';
 // CSS is loaded in index.html
 
 import type { Note } from '../types';
@@ -13,6 +14,7 @@ import { ArrowLeftIcon, DownloadIcon, ShareIcon, SparklesIcon, TrashIcon } from 
 
 // Access Quill instance from ReactQuill
 const Quill = (ReactQuill as any).Quill;
+(window as any).hljs = hljs;
 
 // Register a custom divider blot (hr)
 const BlockEmbed = Quill.import('blots/block/embed');
@@ -108,33 +110,146 @@ const EditorPage: React.FC = () => {
     // List Auto-formatting Bindings
     // We add these imperatively to ensure they are registered correctly on the instance
     
-    // 1. Bullet List with '* '
+    // Unified Markdown shortcuts handler (Space trigger)
     quill.keyboard.addBinding(
-        { key: ' ', collapsed: true, prefix: /^\*$/ } as any,
+        { key: 32, collapsed: true, format: { 'code-block': false } } as any,
         function(range: any, context: any) {
-            quill.deleteText(range.index - 1, 1);
-            quill.formatLine(range.index - 1, 1, 'list', 'bullet');
-            return false;
-        }
-    );
+            const [line, offset] = quill.getLine(range.index);
+            // Use getText to get the clean content from the start of the line to the cursor
+            // This avoids issues with hidden DOM characters on the first line
+            const lineStart = range.index - offset;
+            const textToCursor = quill.getText(lineStart, offset);
 
-    // 2. Bullet List with '- '
-    quill.keyboard.addBinding(
-        { key: ' ', collapsed: true, prefix: /^-$/ } as any,
-        function(range: any, context: any) {
-            quill.deleteText(range.index - 1, 1);
-            quill.formatLine(range.index - 1, 1, 'list', 'bullet');
-            return false;
-        }
-    );
+            // --- Block Format Triggers (Start of Line) ---
+            
+            // 1. Bullet List (* or -)
+            if (textToCursor === '*' || textToCursor === '-') {
+                quill.deleteText(range.index - 1, 1);
+                quill.formatLine(range.index - 1, 1, 'list', 'bullet');
+                return false;
+            }
 
-    // 3. Ordered List with '1. '
-    quill.keyboard.addBinding(
-        { key: ' ', collapsed: true, prefix: /^1\.$/ } as any,
-        function(range: any, context: any) {
-            quill.deleteText(range.index - 2, 2);
-            quill.formatLine(range.index - 2, 1, 'list', 'ordered');
-            return false;
+            // 2. Ordered List (1.)
+            if (textToCursor === '1.') {
+                quill.deleteText(range.index - 2, 2);
+                quill.formatLine(range.index - 2, 1, 'list', 'ordered');
+                return false;
+            }
+
+            // 3. Blockquote (>)
+            if (textToCursor === '>') {
+                 quill.deleteText(range.index - 1, 1);
+                 quill.formatLine(range.index - 1, 1, 'blockquote', true);
+                 return false;
+            }
+
+            // 4. Headers (#, ##, ###)
+            if (textToCursor === '#') {
+                quill.deleteText(range.index - 1, 1);
+                quill.formatLine(range.index - 1, 1, 'header', 1);
+                return false;
+            }
+            if (textToCursor === '##') {
+                quill.deleteText(range.index - 2, 2);
+                quill.formatLine(range.index - 2, 1, 'header', 2);
+                return false;
+            }
+            if (textToCursor === '###') {
+                quill.deleteText(range.index - 3, 3);
+                quill.formatLine(range.index - 3, 1, 'header', 3);
+                return false;
+            }
+
+            // 5. Code Block (```)
+            if (textToCursor === '```') {
+                quill.deleteText(range.index - 3, 3);
+                quill.formatLine(range.index - 3, 1, 'code-block', true);
+                return false;
+            }
+            
+            // --- Inline Format Triggers ---
+
+            // 6. Bold (**text**)
+            const boldMatch = textToCursor.match(/\*\*([^\s][^*]*[^\s])\*\*$/);
+            if (boldMatch) {
+                const matchLength = boldMatch[0].length;
+                const textLength = boldMatch[1].length;
+                const startIndex = range.index - matchLength;
+                
+                quill.deleteText(startIndex, matchLength);
+                quill.insertText(startIndex, boldMatch[1], 'user');
+                quill.formatText(startIndex, textLength, 'bold', true);
+                quill.insertText(startIndex + textLength, ' ', 'user');
+                quill.setSelection(startIndex + textLength + 1, 0);
+                quill.format('bold', false);
+                return false;
+            }
+
+            // 7. Italic (*text*)
+            const italicMatch = textToCursor.match(/(?<!\*)\*([^\s][^*]*[^\s])\*(?!\*)$/);
+            if (italicMatch) {
+                const matchLength = italicMatch[0].length;
+                const textLength = italicMatch[1].length;
+                const startIndex = range.index - matchLength;
+                
+                quill.deleteText(startIndex, matchLength);
+                quill.insertText(startIndex, italicMatch[1], 'user');
+                quill.formatText(startIndex, textLength, 'italic', true);
+                quill.insertText(startIndex + textLength, ' ', 'user');
+                quill.setSelection(startIndex + textLength + 1, 0);
+                quill.format('italic', false);
+                return false;
+            }
+
+            // 8. Inline Code (`code`)
+            const codeMatch = textToCursor.match(/`([^`]+)`$/);
+            if (codeMatch) {
+                const matchLength = codeMatch[0].length;
+                const textLength = codeMatch[1].length;
+                const startIndex = range.index - matchLength;
+
+                quill.deleteText(startIndex, matchLength);
+                quill.insertText(startIndex, codeMatch[1], 'user');
+                quill.formatText(startIndex, textLength, { 'code': true });
+                quill.insertText(startIndex + textLength, ' ', 'user');
+                quill.setSelection(startIndex + textLength + 1, 0);
+                quill.format('code', false);
+                return false;
+            }
+
+            // 9. Image (![alt](url))
+            // Only simple match: ![alt](url) 
+            const imageMatch = textToCursor.match(/!\[([^\]]*)\]\(([^)]+)\)$/);
+            if (imageMatch) {
+                const matchLength = imageMatch[0].length;
+                const url = imageMatch[2];
+                const startIndex = range.index - matchLength;
+                
+                quill.deleteText(startIndex, matchLength);
+                quill.insertEmbed(startIndex, 'image', url, 'user');
+                // Move cursor after image
+                quill.setSelection(startIndex + 1, 0);
+                return false;
+            }
+
+            // 10. Link ([title](url))
+            const linkMatch = textToCursor.match(/\[([^\]]+)\]\(([^)]+)\)$/);
+            if (linkMatch) {
+                 const matchLength = linkMatch[0].length;
+                 const text = linkMatch[1];
+                 const url = linkMatch[2];
+                 const startIndex = range.index - matchLength;
+
+                 quill.deleteText(startIndex, matchLength);
+                 quill.insertText(startIndex, text, 'user');
+                 quill.formatText(startIndex, text.length, 'link', url);
+                 quill.insertText(startIndex + text.length, ' ', 'user');
+                 quill.setSelection(startIndex + text.length + 1, 0);
+                 quill.format('link', false);
+                 return false;
+            }
+
+            return true;
         }
     );
 
@@ -154,10 +269,56 @@ const EditorPage: React.FC = () => {
         }
     );
 
+    // Fix for selection stuck on empty note (Backspace)
+    quill.keyboard.addBinding(
+        { key: 8 } as any, // Backspace
+        function(range: any, context: any) {
+            if (quill.getLength() <= 1 && range.length >= 0) {
+                quill.setSelection(0, 0);
+                quill.formatLine(0, 1, 'header', false);
+                quill.formatLine(0, 1, 'list', false);
+                quill.formatLine(0, 1, 'code-block', false);
+                quill.formatLine(0, 1, 'blockquote', false);
+                quill.format('bold', false);
+                quill.format('italic', false);
+                quill.format('code', false);
+                return false; 
+            }
+            return true;
+        }
+    );
+
+    // Fix for selection stuck on empty note (Delete)
+    quill.keyboard.addBinding(
+        { key: 46 } as any, // Delete
+        function(range: any, context: any) {
+            if (quill.getLength() <= 1 && range.length >= 0) {
+                quill.setSelection(0, 0);
+                quill.formatLine(0, 1, 'header', false);
+                quill.formatLine(0, 1, 'list', false);
+                quill.formatLine(0, 1, 'code-block', false);
+                quill.formatLine(0, 1, 'blockquote', false);
+                quill.format('bold', false);
+                quill.format('italic', false);
+                quill.format('code', false);
+                return false;
+            }
+            return true;
+        }
+    );
+
+    // Prevent identifying selection of the trailing newline in empty doc
+    const handleSelectionChange = (range: any) => {
+        if (range && range.length > 0 && quill.getLength() === 1) {
+             quill.setSelection(0, 0);
+        }
+    };
+    quill.on('selection-change', handleSelectionChange);
 
     quill.root.addEventListener('paste', handlePaste);
     return () => { 
         quill.root.removeEventListener('paste', handlePaste); 
+        quill.off('selection-change', handleSelectionChange);
     };
   }, []);
 
@@ -348,7 +509,9 @@ const EditorPage: React.FC = () => {
 
 
   const modules = useMemo(() => ({
-    syntax: true, 
+    syntax: {
+      highlight: (text: string) => hljs.highlightAuto(text).value,
+    },
     toolbar: [
       [{ 'header': [1, 2, false] }],
       ['bold', 'italic', 'blockquote', 'code-block'],
