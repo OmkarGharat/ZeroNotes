@@ -29,7 +29,7 @@
 
 <!-- SCREENSHOT PLACEHOLDER -->
 <div align="center">
-  <img src="https://placehold.co/1200x600/101010/FFFFFF/png?text=ZeroNotes+Interface+Preview" alt="ZeroNotes Screenshot" style="border-radius: 10px; box-shadow: 0px 10px 30px rgba(0,0,0,0.5);">
+  <img src="/assets/ZeroNotes.PNG" alt="ZeroNotes Screenshot" style="border-radius: 10px; box-shadow: 0px 10px 30px rgba(0,0,0,0.5);">
 </div>
 
 <br />
