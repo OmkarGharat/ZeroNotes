@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import ReactQuill from 'react-quill';
 import TurndownService from 'turndown';
 // CSS is loaded in index.html
 
@@ -44,9 +43,8 @@ const SharePage: React.FC = () => {
     const handleDownloadMarkdown = () => {
         if (!note || !contentRef.current) return;
         
-        const editorContent = contentRef.current.querySelector('.ql-editor');
-        if (!editorContent) return;
         setIsDownloading(true);
+
 
         try {
             const turndownService = new TurndownService({
@@ -63,7 +61,7 @@ const SharePage: React.FC = () => {
                 }
             });
 
-            const markdown = turndownService.turndown(editorContent.innerHTML);
+            const markdown = turndownService.turndown(note.content);
             const filename = (note.title.trim() || 'shared-note') + '.md';
             
             const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
@@ -117,14 +115,12 @@ const SharePage: React.FC = () => {
                 </button>
             </div>
 
-            <div ref={contentRef} className="select-text min-h-[400px]">
-                <ReactQuill
-                    value={note.content}
-                    readOnly={true}
-                    theme="bubble"
-                    className="[&_.ql-editor]:p-0 [&_.ql-editor]:text-lg [&_.ql-editor]:font-sans [&_.ql-editor]:leading-relaxed"
-                />
-            </div>
+            <div 
+                ref={contentRef} 
+                className="select-text min-h-[400px] prose dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: note.content }}
+            />
+
             
             <div className="mt-24 py-8 border-t border-zero-border dark:border-zero-darkBorder text-center">
                  <Link to="/" className="inline-flex items-center gap-2 text-zero-secondaryText hover:text-zero-text dark:hover:text-white transition-colors text-xs uppercase tracking-widest font-medium">

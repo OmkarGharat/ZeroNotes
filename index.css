@@ -15,7 +15,7 @@
     /* CSS Class based Dark Mode */
     .dark body {
         background-color: #0D0D0D;
-        color: #ECECEC;
+        color: #ECECEC !important;
     }
 }
 
@@ -293,4 +293,209 @@
 .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="3"]::before {
     font-size: 14px !important;
     font-weight: 500 !important;
+}
+
+/* --- BlockSuite Integration --- */
+.blocksuite-editor-container page-editor {
+    background-color: transparent !important;
+}
+
+/* Force dark mode variables when in .dark mode */
+.dark .blocksuite-editor-container {
+    --affine-background-primary-color: transparent !important;
+    --affine-background-secondary-color: #1a1a1a !important;
+    --affine-text-primary-color: #ECECEC !important;
+    --affine-text-secondary-color: #A1A1AA !important;
+    --affine-text-disable-color: #666666 !important;
+    --affine-icon-color: #A1A1AA !important;
+    --affine-icon-secondary: #666666 !important;
+    --affine-border-color: #2D2D2D !important;
+    --affine-divider-color: #2D2D2D !important;
+    --affine-shadow-color: rgba(0, 0, 0, 0.4) !important;
+    --affine-placeholder-color: #666666 !important;
+}
+
+/* Ensure the editor custom element and its host use the variables */
+.dark .blocksuite-editor-container page-editor {
+    background-color: transparent !important;
+    color: #ECECEC !important;
+}
+
+/* CRITICAL: Force all text-containing elements to be visible */
+.dark .blocksuite-editor-container *[contenteditable],
+.dark .blocksuite-editor-container .inline-editor,
+.dark .blocksuite-editor-container .affine-paragraph-block-container,
+.dark .blocksuite-editor-container .affine-block-children-container,
+.dark .blocksuite-editor-container .affine-note-block-container,
+.dark .blocksuite-editor-container [data-block-is-full-width="true"],
+.dark .blocksuite-editor-container rich-text,
+.dark .blocksuite-editor-container v-line,
+.dark .blocksuite-editor-container v-text,
+.dark .blocksuite-editor-container affine-paragraph,
+.dark .blocksuite-editor-container affine-list,
+.dark .blocksuite-editor-container [data-v-root="true"] {
+    color: #ECECEC !important;
+}
+
+/* Force inline editor text specifically */
+.dark .blocksuite-editor-container .inline-editor>* {
+    color: #ECECEC !important;
+}
+
+/* CRITICAL: Make placeholder text visible in dark mode only when it's supposed to be shown */
+.dark .blocksuite-editor-container .affine-paragraph-placeholder {
+    color: #666666 !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+}
+
+/* Ensure placeholder hides when there is content - BlockSuite uses display property internally */
+/* We remove the forced 'display: block' and let BlockSuite manage it */
+
+.dark .blocksuite-editor-container [data-placeholder]:empty::before,
+.dark .blocksuite-editor-container [data-placeholder-text]::before,
+.dark .blocksuite-editor-container [data-v-empty="true"]::before {
+    color: #666666 !important;
+    opacity: 1 !important;
+}
+
+/* Ensure placeholder shows on empty contenteditable */
+.dark .blocksuite-editor-container [contenteditable]:empty::before {
+    content: attr(data-placeholder) !important;
+    color: #666666 !important;
+    opacity: 1 !important;
+    pointer-events: none;
+}
+
+/* Adjust Editor Padding and Alignment */
+.blocksuite-editor-container {
+    height: 100%;
+    width: 100%;
+    padding: 40px 10px 20px 10px;
+    /* Increased top, reduced left/right */
+    overflow-y: auto;
+}
+
+/* Move the internal content more to the left */
+.blocksuite-editor-container affine-page-root {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+.blocksuite-editor-container .affine-page-root-block-container {
+    padding-left: 10px !important;
+    max-width: 100% !important;
+}
+
+.blocksuite-editor-container .affine-page-viewport {
+    background-color: transparent !important;
+    padding-bottom: 200px;
+}
+
+/* Ensure blocks take full width but respect max-width for readability */
+.affine-block-children-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* BlockSuite internal scrollbar matching app style */
+.affine-page-viewport::-webkit-scrollbar {
+    width: 6px;
+}
+
+.affine-page-viewport::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.affine-page-viewport::-webkit-scrollbar-thumb {
+    background: #D4D4D8;
+    border-radius: 3px;
+}
+
+.dark .affine-page-viewport::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+/* === CRITICAL: Force ALL BlockSuite Widgets to Dark Mode === */
+.dark,
+[data-theme="dark"] {
+    --affine-theme-mode: dark !important;
+    --affine-background-primary-color: #1a1a1a !important;
+    --affine-background-secondary-color: #121212 !important;
+    --affine-background-tertiary-color: #2D2D2D !important;
+    --affine-background-overlay-panel-color: #1a1a1a !important;
+    --affine-text-primary-color: #ECECEC !important;
+    --affine-text-secondary-color: #A1A1AA !important;
+    --affine-border-color: #2D2D2D !important;
+    --affine-placeholder-color: #666666 !important;
+    --affine-icon-color: #A1A1AA !important;
+}
+
+/* Slash Menu */
+.dark affine-slash-menu-widget,
+.dark .affine-slash-menu,
+.dark .slash-menu-container,
+[data-theme="dark"] affine-slash-menu-widget {
+    background-color: #1a1a1a !important;
+    color: #ECECEC !important;
+    border-color: #2D2D2D !important;
+}
+
+.dark .affine-slash-menu .slash-menu-item,
+.dark .affine-slash-menu .menu-item {
+    background-color: #1a1a1a !important;
+    color: #ECECEC !important;
+}
+
+.dark .affine-slash-menu .slash-menu-item:hover,
+.dark .affine-slash-menu .menu-item:hover,
+.dark .affine-slash-menu .slash-menu-item.selected {
+    background-color: #2D2D2D !important;
+    color: #FFFFFF !important;
+}
+
+/* Format Bar / Toolbar */
+.dark affine-format-bar-widget,
+.dark .affine-format-bar,
+.dark .format-bar-widget {
+    background-color: #1a1a1a !important;
+    color: #ECECEC !important;
+    border-color: #2D2D2D !important;
+}
+
+/* Linked Doc Widget */
+.dark affine-linked-doc-widget {
+    background-color: #1a1a1a !important;
+    color: #ECECEC !important;
+}
+
+/* All menu items globally */
+.dark .menu-item,
+.dark [role="menuitem"],
+.dark .affine-menu-item {
+    background-color: #1a1a1a !important;
+    color: #ECECEC !important;
+}
+
+.dark .menu-item:hover,
+.dark [role="menuitem"]:hover,
+.dark .affine-menu-item:hover {
+    background-color: #2D2D2D !important;
+}
+
+/* Dropdown menus */
+.dark .affine-menu,
+.dark [role="menu"],
+.dark .dropdown-menu {
+    background-color: #1a1a1a !important;
+    border: 1px solid #2D2D2D !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Modal/Dialog components */
+.dark affine-modal-widget,
+.dark affine-inner-modal-widget,
+.dark .affine-modal {
+    background-color: #1a1a1a !important;
+    color: #ECECEC !important;
 }
