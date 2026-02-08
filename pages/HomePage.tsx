@@ -108,7 +108,7 @@ const HomePage: React.FC = () => {
                 />
             </div>
             <p className="text-center text-zero-secondaryText dark:text-zero-darkSecondaryText text-sm max-w-md leading-relaxed ml-1">
-                Zero Notes: Where clarity begins...
+                Where clarity begins...
             </p>
         </div>
         
@@ -120,7 +120,9 @@ const HomePage: React.FC = () => {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-zero-surface dark:bg-zero-darkSurface border border-transparent focus:bg-white dark:focus:bg-zero-darkBg border-zero-border dark:border-zero-darkBorder rounded-md text-sm focus:outline-none focus:border-zero-border dark:focus:border-neutral-600 transition-all text-zero-text dark:text-zero-darkText placeholder-gray-400"
+                    onFocus={(e) => console.log('[SEARCH] Focus event', { border: window.getComputedStyle(e.target).border })}
+                    onBlur={(e) => console.log('[SEARCH] Blur event', { border: window.getComputedStyle(e.target).border })}
+                    className="w-full pl-9 pr-4 py-2 bg-zero-surface dark:bg-zero-darkSurface border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:border-zero-accent dark:focus:border-zero-darkAccent transition-colors duration-200 text-zero-text dark:text-zero-darkText placeholder-gray-400"
                 />
              </div>
             <Link

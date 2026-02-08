@@ -23,6 +23,7 @@ const EditorPage: React.FC = () => {
   const [cloudSlug, setCloudSlug] = useState<string | undefined>(undefined);
   const [isPublishing, setIsPublishing] = useState(false);
   const [notification, setNotification] = useState('');
+  const [isLoading, setIsLoading] = useState(!!id);
   
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -57,6 +58,7 @@ const EditorPage: React.FC = () => {
   // 1. Data Loading
   useEffect(() => {
     if (id) {
+      setIsLoading(true);
       const notes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
       const noteToEdit = notes.find(note => note.id === id);
       if (noteToEdit) {
@@ -65,6 +67,14 @@ const EditorPage: React.FC = () => {
         setBlockSuiteData(noteToEdit.blockSuiteData);
         setCloudSlug(noteToEdit.cloudSlug);
       }
+      setIsLoading(false);
+    } else {
+      // New note: reset state
+      setTitle('');
+      setContent('');
+      setBlockSuiteData(undefined);
+      setCloudSlug(undefined);
+      setIsLoading(false);
     }
   }, [id]);
 
@@ -318,12 +328,19 @@ const EditorPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-grow h-[calc(100vh-200px)] border rounded-lg overflow-hidden relative bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800">
-        <BlockSuiteEditor 
-            initialContentHtml={content} 
-            initialSnapshot={blockSuiteData} 
-            onChange={handleEditorChange} 
-        />
+      <div className="flex-grow h-[calc(100vh-200px)] rounded-lg overflow-hidden relative bg-white dark:bg-neutral-900">
+        {!isLoading ? (
+          <BlockSuiteEditor 
+              key={id || 'new'}
+              initialContentHtml={content} 
+              initialSnapshot={blockSuiteData} 
+              onChange={handleEditorChange} 
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-zero-secondaryText dark:text-zero-darkSecondaryText">
+            Loading note...
+          </div>
+        )}
       </div>
     </div>
   );

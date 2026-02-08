@@ -342,21 +342,43 @@
     color: #ECECEC !important;
 }
 
-/* CRITICAL: Make placeholder text visible in dark mode only when it's supposed to be shown */
+/* CRITICAL: Make placeholder text visible in dark mode ALWAYS on empty elements */
 .dark .blocksuite-editor-container .affine-paragraph-placeholder {
     color: #666666 !important;
     opacity: 1 !important;
     pointer-events: none !important;
+    display: block !important;
 }
 
-/* Ensure placeholder hides when there is content - BlockSuite uses display property internally */
-/* We remove the forced 'display: block' and let BlockSuite manage it */
-
+/* Ensure placeholder shows on empty contenteditable - ALWAYS visible */
 .dark .blocksuite-editor-container [data-placeholder]:empty::before,
-.dark .blocksuite-editor-container [data-placeholder-text]::before,
-.dark .blocksuite-editor-container [data-v-empty="true"]::before {
+.dark .blocksuite-editor-container [data-placeholder-text]:empty::before,
+.dark .blocksuite-editor-container [data-v-empty="true"]::before,
+.dark .blocksuite-editor-container [contenteditable]:empty::before {
     color: #666666 !important;
     opacity: 1 !important;
+    display: block !important;
+    content: attr(data-placeholder) !important;
+    pointer-events: none !important;
+}
+
+/* Light mode placeholder */
+.blocksuite-editor-container [data-placeholder]:empty::before,
+.blocksuite-editor-container [data-placeholder-text]:empty::before,
+.blocksuite-editor-container [contenteditable]:empty::before {
+    color: #999999 !important;
+    opacity: 1 !important;
+    display: block !important;
+    content: attr(data-placeholder) !important;
+    pointer-events: none !important;
+}
+
+/* IMPORTANT: Hide placeholder when element is NOT empty */
+.dark .blocksuite-editor-container [data-placeholder]:not(:empty)::before,
+.dark .blocksuite-editor-container [data-placeholder-text]:not(:empty)::before,
+.dark .blocksuite-editor-container [contenteditable]:not(:empty)::before {
+    display: none !important;
+    content: none !important;
 }
 
 /* Ensure placeholder shows on empty contenteditable */
@@ -365,6 +387,24 @@
     color: #666666 !important;
     opacity: 1 !important;
     pointer-events: none;
+}
+
+/* Aggressively hide ALL placeholder pseudo-elements when parent has text content */
+.dark .blocksuite-editor-container [data-placeholder]:not(:empty)::before,
+.dark .blocksuite-editor-container [data-placeholder]:not(:empty)::after,
+.dark .blocksuite-editor-container [contenteditable]:not(:empty)::before,
+.dark .blocksuite-editor-container [contenteditable]:not(:empty)::after {
+    display: none !important;
+    content: '' !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+/* Target BlockSuite's specific placeholder implementation */
+.dark .blocksuite-editor-container .affine-paragraph-rich-text-wrapper:not(:empty) [data-placeholder]::before,
+.dark .blocksuite-editor-container rich-text:not(:empty) [data-placeholder]::before {
+    display: none !important;
+    content: '' !important;
 }
 
 /* Adjust Editor Padding and Alignment */
@@ -414,6 +454,23 @@
 
 .dark .affine-page-viewport::-webkit-scrollbar-thumb {
     background: #333;
+}
+
+/* Remove any outlines or borders from editor elements */
+.blocksuite-editor-container,
+.blocksuite-editor-container *,
+.blocksuite-editor-container page-editor,
+.blocksuite-editor-container affine-page-root,
+.blocksuite-editor-container .affine-page-viewport {
+    outline: none !important;
+}
+
+/* Ensure no focus rings on BlockSuite elements */
+.blocksuite-editor-container *:focus,
+.blocksuite-editor-container *:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* === CRITICAL: Force ALL BlockSuite Widgets to Dark Mode === */

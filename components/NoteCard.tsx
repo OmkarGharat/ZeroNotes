@@ -12,8 +12,42 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
   // Create a temporary element to parse the HTML content and extract text
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = note.content;
-  const textContent = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // Remove style and script tags to avoid them showing up in textContent
+  const styles = tempDiv.getElementsByTagName('style');
+  while(styles[0]) styles[0].parentNode?.removeChild(styles[0]);
+  const scripts = tempDiv.getElementsByTagName('script');
+  while(scripts[0]) scripts[0].parentNode?.removeChild(scripts[0]);
+
+  // Add spacing between block-level elements before extracting text
+  const blockElements = tempDiv.querySelectorAll('div, p, h1, h2, h3, h4, h5, h6, li, affine-paragraph');
+  blockElements.forEach((el, index) => {
+    if (index > 0 && el.textContent && el.textContent.trim()) {
+      // Add a space separator before each block element (except the first)
+      const separator = document.createTextNode(' ');
+      el.parentNode?.insertBefore(separator, el);
+    }
+  });
+
+  let textContent = tempDiv.innerText || tempDiv.textContent || '';
+  
+  // Aggressively strip [object Object] and other common non-text residuals
+  // Also normalize multiple spaces to single space
+  textContent = textContent
+    .replace(/\[object\s+Object\]/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
   const snippet = textContent.substring(0, 140) + (textContent.length > 140 ? '...' : '');
+
+  // Log for debugging
+  if (note.title === 'test' || !snippet) {
+      console.log(`[Snippet Debug] ID: ${note.id} Title: ${note.title}`, {
+          rawContentLen: note.content?.length,
+          extractedText: textContent.substring(0, 100),
+          finalSnippet: snippet
+      });
+  }
 
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
