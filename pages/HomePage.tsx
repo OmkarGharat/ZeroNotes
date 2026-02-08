@@ -120,8 +120,6 @@ const HomePage: React.FC = () => {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={(e) => console.log('[SEARCH] Focus event', { border: window.getComputedStyle(e.target).border })}
-                    onBlur={(e) => console.log('[SEARCH] Blur event', { border: window.getComputedStyle(e.target).border })}
                     className="w-full pl-9 pr-4 py-2 bg-zero-surface dark:bg-zero-darkSurface border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:border-zero-accent dark:focus:border-zero-darkAccent transition-colors duration-200 text-zero-text dark:text-zero-darkText placeholder-gray-400"
                 />
              </div>

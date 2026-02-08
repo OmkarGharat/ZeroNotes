@@ -342,69 +342,28 @@
     color: #ECECEC !important;
 }
 
-/* CRITICAL: Make placeholder text visible in dark mode ALWAYS on empty elements */
-.dark .blocksuite-editor-container .affine-paragraph-placeholder {
-    color: #666666 !important;
-    opacity: 1 !important;
-    pointer-events: none !important;
-    display: block !important;
+/* === PLACEHOLDER MANAGEMENT === */
+/* RULE: Show placeholder ONLY on completely empty elements */
+
+/* Default: HIDE all ::before pseudo elements (placeholders) */
+.blocksuite-editor-container *::before,
+.dark .blocksuite-editor-container *::before {
+    content: '' !important;
+    display: none !important;
 }
 
-/* Ensure placeholder shows on empty contenteditable - ALWAYS visible */
-.dark .blocksuite-editor-container [data-placeholder]:empty::before,
-.dark .blocksuite-editor-container [data-placeholder-text]:empty::before,
-.dark .blocksuite-editor-container [data-v-empty="true"]::before,
-.dark .blocksuite-editor-container [contenteditable]:empty::before {
-    color: #666666 !important;
-    opacity: 1 !important;
-    display: block !important;
+/* ONLY show placeholder when element AND all children are empty */
+.blocksuite-editor-container v-text:empty::before,
+.dark .blocksuite-editor-container v-text:empty::before {
     content: attr(data-placeholder) !important;
-    pointer-events: none !important;
-}
-
-/* Light mode placeholder */
-.blocksuite-editor-container [data-placeholder]:empty::before,
-.blocksuite-editor-container [data-placeholder-text]:empty::before,
-.blocksuite-editor-container [contenteditable]:empty::before {
     color: #999999 !important;
-    opacity: 1 !important;
-    display: block !important;
-    content: attr(data-placeholder) !important;
+    display: inline !important;
+    opacity: 0.6 !important;
     pointer-events: none !important;
 }
 
-/* IMPORTANT: Hide placeholder when element is NOT empty */
-.dark .blocksuite-editor-container [data-placeholder]:not(:empty)::before,
-.dark .blocksuite-editor-container [data-placeholder-text]:not(:empty)::before,
-.dark .blocksuite-editor-container [contenteditable]:not(:empty)::before {
-    display: none !important;
-    content: none !important;
-}
-
-/* Ensure placeholder shows on empty contenteditable */
-.dark .blocksuite-editor-container [contenteditable]:empty::before {
-    content: attr(data-placeholder) !important;
+.dark .blocksuite-editor-container v-text:empty::before {
     color: #666666 !important;
-    opacity: 1 !important;
-    pointer-events: none;
-}
-
-/* Aggressively hide ALL placeholder pseudo-elements when parent has text content */
-.dark .blocksuite-editor-container [data-placeholder]:not(:empty)::before,
-.dark .blocksuite-editor-container [data-placeholder]:not(:empty)::after,
-.dark .blocksuite-editor-container [contenteditable]:not(:empty)::before,
-.dark .blocksuite-editor-container [contenteditable]:not(:empty)::after {
-    display: none !important;
-    content: '' !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-}
-
-/* Target BlockSuite's specific placeholder implementation */
-.dark .blocksuite-editor-container .affine-paragraph-rich-text-wrapper:not(:empty) [data-placeholder]::before,
-.dark .blocksuite-editor-container rich-text:not(:empty) [data-placeholder]::before {
-    display: none !important;
-    content: '' !important;
 }
 
 /* Adjust Editor Padding and Alignment */
@@ -511,13 +470,28 @@
     color: #FFFFFF !important;
 }
 
-/* Format Bar / Toolbar */
+/* Format Bar / Toolbar - ENSURE VISIBLE */
 .dark affine-format-bar-widget,
 .dark .affine-format-bar,
-.dark .format-bar-widget {
+.dark .format-bar-widget,
+affine-format-bar-widget,
+.affine-format-bar,
+.format-bar-widget {
     background-color: #1a1a1a !important;
     color: #ECECEC !important;
     border-color: #2D2D2D !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1000 !important;
+}
+
+/* Slash Menu */
+.dark affine-slash-menu,
+affine-slash-menu {
+    display: block !important;
+    visibility: visible !important;
+    z-index: 1000 !important;
 }
 
 /* Linked Doc Widget */
