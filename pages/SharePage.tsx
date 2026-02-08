@@ -31,6 +31,9 @@ const SharePage: React.FC = () => {
             const data = await fetchNoteFromCloud(slug);
             if (data) {
                 setNote(data);
+                if (data.title) {
+                    document.title = `${data.title} | Zero Notes`;
+                }
             } else {
                 setError("Note not found.");
             }
@@ -38,6 +41,10 @@ const SharePage: React.FC = () => {
         };
 
         loadNote();
+
+        return () => {
+            document.title = "Zero Notes - Minimalist Markdown Editor";
+        };
     }, [slug]);
 
     const handleDownloadMarkdown = () => {

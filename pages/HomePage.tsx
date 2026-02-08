@@ -99,15 +99,16 @@ const HomePage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
         <div>
             {/* Logo Replacement */}
+            <h1 className="sr-only">Zero Notes - Minimalist Markdown Editor</h1>
             <div className="h-16 flex items-center mb-1">
                 <img 
                     src={isDark ? "/logo-dark.png" : "/logo-light.png"} 
-                    alt="ZeroNotes Logo" 
+                    alt="Zero Notes - Minimalist Markdown Editor" 
                     className="h-full w-auto object-contain" 
                 />
             </div>
             <p className="text-center text-zero-secondaryText dark:text-zero-darkSecondaryText text-sm max-w-md leading-relaxed ml-1">
-                Where clarity begins...
+                Zero Notes: Where clarity begins...
             </p>
         </div>
         

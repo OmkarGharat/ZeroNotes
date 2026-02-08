@@ -27,7 +27,7 @@ function AppContent() {
       {!isEditorPage && (
         <footer className="py-2 mt-auto text-center opacity-40 hover:opacity-80 transition-opacity duration-700">
             <p className="text-[10px] tracking-[0.3em] uppercase font-medium text-neutral-500 dark:text-neutral-400 cursor-default">
-                ZeroNotes © 2026 — Developed by Omkar
+                Zero Notes © 2026 — Developed by Omkar
             </p>
         </footer>
       )}
