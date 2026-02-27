@@ -14,6 +14,7 @@
     "@blocksuite/icons": "^2.1.75",
     "@blocksuite/presets": "0.19.5",
     "@blocksuite/store": "0.19.5",
+    "@vercel/analytics": "^1.6.1",
     "firebase": "^10.8.1",
     "highlight.js": "^11.11.1",
     "lodash": "^4.17.23",

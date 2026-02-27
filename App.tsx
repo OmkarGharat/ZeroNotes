@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import HomePage from './pages/HomePage';
 import EditorPage from './pages/EditorPage';
 import SharePage from './pages/SharePage';
@@ -40,6 +41,7 @@ function App() {
     <ThemeProvider>
       <HashRouter>
         <AppContent />
+        <Analytics />
       </HashRouter>
     </ThemeProvider>
   );
