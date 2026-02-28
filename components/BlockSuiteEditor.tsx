@@ -213,6 +213,33 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                 editor.style.backgroundColor = 'transparent';
                 editor.style.display = 'block';
                 editor.tabIndex = 0; // Make it focusable
+
+                // FIX: BlockSuite click-to-cursor not placing caret on clicked paragraph.
+                // Use browser's caretRangeFromPoint to force correct cursor placement.
+                editor.addEventListener('click', (e) => {
+                    try {
+                        let range: Range | null = null;
+                        if ((document as any).caretRangeFromPoint) {
+                            range = (document as any).caretRangeFromPoint(e.clientX, e.clientY);
+                        } else if (document.caretPositionFromPoint) {
+                            const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                            if (pos) {
+                                range = document.createRange();
+                                range.setStart(pos.offsetNode, pos.offset);
+                                range.collapse(true);
+                            }
+                        }
+                        if (range) {
+                            const sel = window.getSelection();
+                            if (sel) {
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }
+                        }
+                    } catch (_) {
+                        // Silent fail — let BlockSuite handle it
+                    }
+                });
                 
                 containerRef.current?.appendChild(editor);
                 editorRef.current = editor;
@@ -305,9 +332,20 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                     }
                 });
                 
-                // Also run on any mutations as a safety net
-                const observer = new MutationObserver(() => {
-                    fixPlaceholderOverlap();
+                // Guard: pause MutationObserver during clicks to avoid interfering with cursor
+                let isClickInProgress = false;
+                editor.addEventListener('mousedown', () => {
+                    isClickInProgress = true;
+                    setTimeout(() => { isClickInProgress = false; }, 500);
+                });
+
+                // Also run on any mutations as a safety net — but NOT during click interactions
+                const observer = new MutationObserver((mutations) => {
+                    if (isClickInProgress) return; // Don't interfere with cursor placement
+                    const hasStructuralChange = mutations.some(m => m.type === 'childList' || (m.type === 'attributes' && m.attributeName === 'class'));
+                    if (hasStructuralChange) {
+                        fixPlaceholderOverlap();
+                    }
                 });
                 observer.observe(editor, { attributes: true, childList: true, subtree: true, characterData: true });
 
