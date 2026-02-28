@@ -115,10 +115,11 @@ const EditorPage: React.FC = () => {
   };
 
   const isEditorEmpty = () => {
-     // Basic check: if no title and no content. 
-     // For BlockSuite, checking "empty" is complex (always has default blocks).
-     // We'll rely on string length of imported/exported HTML or title.
-     return !title.trim() && (!content || content.trim() === '' || content === '<p><br></p>'); 
+     if (!content) return true;
+     
+     // Strip HTML tags and check if there's any visible text
+     const plainText = content.replace(/<[^>]*>?/gm, '').trim();
+     return plainText === ''; 
   };
 
   const isTitleDuplicate = (candidateTitle: string) => {
@@ -131,8 +132,7 @@ const EditorPage: React.FC = () => {
   const handleBack = () => {
     if (!id) {
         const hasTitle = title.trim().length > 0;
-        // Check if content has lengths
-        const hasContent = content && content.length > 20; // minimal check
+        const hasContent = !isEditorEmpty();
 
         if (hasTitle || hasContent) {
             openModal(
@@ -151,8 +151,8 @@ const EditorPage: React.FC = () => {
   const handleSave = () => {
     if (!title.trim()) { showNotification('Please enter a title before saving.'); return; }
     if (isTitleDuplicate(title)) { showNotification('A note with this name already exists.'); return; }
-    // if (isEditorEmpty()) { showNotification('Note is empty. Please add content.'); return; } 
-    // Relax empty check for now
+    if (isEditorEmpty()) { showNotification('Note is empty. Please add content.'); return; } 
+    
     const savedNote = updateLocalStorage();
     if (!id && savedNote) navigate(`/edit/${savedNote.id}`);
     showNotification('Saved');

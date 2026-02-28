@@ -97,7 +97,69 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                 if (initialSnapshot) {
                     try {
                         const job = new Job({ collection });
+                        if (initialSnapshot.customBlobs) {
+                            try {
+                                const blobSync = (collection as any).blobSync;
+                                if (blobSync) {
+                                    for (const [sourceId, dataUrl] of Object.entries(initialSnapshot.customBlobs)) {
+                                        try {
+                                            const res = await fetch(dataUrl as string);
+                                            const blob = await res.blob();
+                                            // Some blob syncs take (key, Uint8Array), others (key, Blob), others only 1 arg.
+                                            let newId = sourceId;
+                                            try {
+                                                if (blobSync.set.length >= 2) {
+                                                    await blobSync.set(sourceId, blob);
+                                                } else {
+                                                    newId = await blobSync.set(blob);
+                                                }
+                                            } catch (e) {
+                                                // Fallback to array buffer if it needs Uint8Array
+                                                const buf = new Uint8Array(await blob.arrayBuffer());
+                                                if (blobSync.set.length >= 2) {
+                                                    await blobSync.set(sourceId, buf);
+                                                } else {
+                                                    newId = await blobSync.set(buf);
+                                                }
+                                            }
+
+                                            // If ID mismatched because it ignores our passed-in ID, update the snapshot block!
+                                            if (newId !== sourceId && initialSnapshot.blocks) {
+                                                for (const block of Object.values<any>(initialSnapshot.blocks)) {
+                                                    if (block.flavour === 'affine:image' && (block.sourceId === sourceId || block.props?.sourceId === sourceId)) {
+                                                        if (block.sourceId === sourceId) block.sourceId = newId;
+                                                        if (block.props?.sourceId) block.props.sourceId = newId;
+                                                    }
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.warn("Failed to load blob", sourceId, e);
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Blob Sync hydration error:", e);
+                            }
+                        }
+
                         targetDoc = await job.snapshotToDoc(initialSnapshot);
+
+                        // Fix for readonly lists bug: check if text fields somehow became simple strings or proxies
+                        // and lack the Y.Text insert method. If so, fallback to HTML.
+                        if (targetDoc) {
+                           let hasInvalidText = false;
+                           const blocks = targetDoc.getBlocks();
+                           for (const block of Object.values(blocks)) {
+                               const b = block as any;
+                               if (b.model && b.model.text && typeof b.model.text.insert !== 'function') {
+                                   hasInvalidText = true;
+                                   break;
+                               }
+                           }
+                           if (hasInvalidText) {
+                               targetDoc = undefined; // Force fallback to HTML import
+                           }
+                        }
                     } catch (err) {
                         console.warn("Snapshot load failed:", err);
                     }
@@ -163,13 +225,25 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                         const pageRoot = editor.querySelector('affine-page-root');
                         
                         if (host?.selection && targetDoc && pageRoot) {
-                            const paragraphBlock = targetDoc.getBlockByFlavour('affine:paragraph')[0];
-                            if (paragraphBlock) {
+                            let targetBlock: any = null;
+                            const noteBlock = targetDoc.getBlockByFlavour('affine:note')[0];
+                            
+                            if (noteBlock && (noteBlock as any).children?.length > 0) {
+                                const children = (noteBlock as any).children;
+                                targetBlock = children[children.length - 1];
+                            } else {
+                                targetBlock = targetDoc.getBlockByFlavour('affine:paragraph')[0];
+                            }
+
+                            if (targetBlock) {
+                                const targetBlockId = targetBlock.id;
+                                const textLength = targetBlock.text?.length || targetBlock.model?.text?.length || 0;
+                                
                                 host.selection.setGroup('note', [
                                     host.selection.create('text', {
                                         from: {
-                                            blockId: paragraphBlock.id,
-                                            index: 0,
+                                            blockId: targetBlockId,
+                                            index: textLength,
                                             length: 0
                                         },
                                         to: null
@@ -182,9 +256,9 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                                 setTimeout(() => {
                                     const selection = window.getSelection();
                                     if (!selection || selection.rangeCount === 0) {
-                                        const firstParagraph = pageRoot.querySelector('[data-block-id]');
-                                        if (firstParagraph) {
-                                            (firstParagraph as HTMLElement).click();
+                                        const el = pageRoot.querySelector(`[data-block-id="${targetBlockId}"]`) || pageRoot.querySelector('[data-block-id]');
+                                        if (el) {
+                                            (el as HTMLElement).click();
                                         }
                                     }
                                 }, 50);
@@ -206,10 +280,11 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                                 if (host?.selection) {
                                     const textSelection = host.selection.find('text');
                                     if (textSelection) {
-                                        const blockId = textSelection.blockId;
-                                        const index = textSelection.from?.index ?? textSelection.index;
+                                        const tsAny = textSelection as any;
+                                        const blockId = tsAny.blockId;
+                                        const index = tsAny.from?.index ?? tsAny.index;
                                         const block = targetDoc.getBlock(blockId);
-                                        const model = block?.model || block;
+                                        const model = (block as any)?.model || block;
                                         
                                         if (model?.text && index !== undefined) {
                                             model.text.insert(text, index);
@@ -281,6 +356,48 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                         const job = new Job({ collection });
                         const snapshot = job.docToSnapshot(targetDoc);
                         if (!snapshot) return;
+
+                        // Auto-append trailing paragraph if last block is an image
+                        try {
+                            const noteBlock = targetDoc.getBlockByFlavour('affine:note')[0];
+                            if (noteBlock && (noteBlock as any).children?.length > 0) {
+                                const children = (noteBlock as any).children;
+                                const lastChildId = children[children.length - 1];
+                                const lastChild = targetDoc.getBlock(lastChildId);
+                                if ((lastChild as any)?.flavour === 'affine:image') {
+                                    targetDoc.addBlock('affine:paragraph', {}, noteBlock.id);
+                                }
+                            }
+                        } catch (e) {}
+
+                        const customBlobs: Record<string, string> = {};
+                        try {
+                            const blobSync = (collection as any).blobSync;
+                            if (blobSync) {
+                                const blocks = targetDoc.getBlocks();
+                                for (const block of Object.values(blocks)) {
+                                    const anyBlock = block as any;
+                                    if (anyBlock.flavour === 'affine:image' && anyBlock.model?.sourceId) {
+                                        const sourceId = anyBlock.model.sourceId;
+                                        if (sourceId) {
+                                            try {
+                                                const blob = await blobSync.get(sourceId);
+                                                if (blob) {
+                                                    const b = blob instanceof Blob ? blob : new Blob([blob]);
+                                                    const reader = new FileReader();
+                                                    reader.readAsDataURL(b);
+                                                    await new Promise(r => reader.onload = r);
+                                                    customBlobs[sourceId] = reader.result as string;
+                                                }
+                                            } catch (e) {}
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {}
+                        
+                        // Append our custom blobs for storage
+                        (snapshot as any).customBlobs = customBlobs;
 
                         const htmlAdapter = new HtmlAdapter(job);
                         const result = await htmlAdapter.fromDocSnapshot({ snapshot });
