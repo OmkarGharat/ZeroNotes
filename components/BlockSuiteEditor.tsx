@@ -269,54 +269,47 @@ const BlockSuiteEditor: React.FC<BlockSuiteEditorProps> = ({ initialContentHtml,
                     }
                 }, 300);
 
-                // Handle paste events to insert text at cursor
-                editor.addEventListener('paste', (e) => {
-                    const text = e.clipboardData?.getData('text/plain');
-                    if (text && targetDoc) {
-                        setTimeout(() => {
-                            try {
-                                // @ts-ignore
-                                const host = editor.host;
-                                if (host?.selection) {
-                                    const textSelection = host.selection.find('text');
-                                    if (textSelection) {
-                                        const tsAny = textSelection as any;
-                                        const blockId = tsAny.blockId;
-                                        const index = tsAny.from?.index ?? tsAny.index;
-                                        const block = targetDoc.getBlock(blockId);
-                                        const model = (block as any)?.model || block;
-                                        
-                                        if (model?.text && index !== undefined) {
-                                            model.text.insert(text, index);
-                                            
-                                            // Move cursor to end of pasted text
-                                            const newIndex = index + text.length;
-                                            setTimeout(() => {
-                                                if (host?.selection) {
-                                                    host.selection.setGroup('note', [
-                                                        host.selection.create('text', {
-                                                            from: { blockId, index: newIndex, length: 0 },
-                                                            to: null
-                                                        })
-                                                    ]);
-                                                }
-                                            }, 10);
-                                            return;
-                                        }
-                                    }
-                                }
-                                
-                                // Fallback
-                                const paragraphBlock = targetDoc.getBlockByFlavour('affine:paragraph')[0];
-                                if (paragraphBlock?.text) {
-                                    paragraphBlock.text.insert(text, paragraphBlock.text.length);
-                                }
-                            } catch (err) {
-                                // Silent fail
-                            }
-                        }, 100);
+                // ✅ BUG FIX: BlockSuite's placeholder overlap on block merge
+                // The placeholder is a <div class="affine-paragraph-placeholder visible"> inside
+                // each affine-paragraph. BlockSuite's reactive signal sometimes fails to clear
+                // the "visible" class after Delete/Backspace merges blocks.
+                // We directly check and remove the "visible" class when the sibling rich-text has text.
+                const fixPlaceholderOverlap = () => {
+                    const pageRoot = editor.querySelector('affine-page-root');
+                    if (!pageRoot) return;
+
+                    const visiblePlaceholders = pageRoot.querySelectorAll('.affine-paragraph-placeholder.visible');
+                    visiblePlaceholders.forEach((placeholder) => {
+                        // The placeholder is a sibling of <rich-text> inside .affine-paragraph-rich-text-wrapper
+                        const wrapper = placeholder.parentElement;
+                        if (!wrapper) return;
+                        const richText = wrapper.querySelector('rich-text');
+                        if (!richText) return;
+
+                        // Check if the rich-text has actual text content (not just zero-width spaces)
+                        const text = richText.textContent?.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                        if (text && text.length > 0) {
+                            // Block has real text — placeholder should NOT be visible
+                            placeholder.classList.remove('visible');
+                        }
+                    });
+                };
+
+                // Run fix on Delete/Backspace keypresses
+                editor.addEventListener('keyup', (e) => {
+                    if (e.key === 'Delete' || e.key === 'Backspace') {
+                        // Run at multiple timings to catch the reactive update
+                        setTimeout(fixPlaceholderOverlap, 0);
+                        setTimeout(fixPlaceholderOverlap, 50);
+                        setTimeout(fixPlaceholderOverlap, 150);
                     }
                 });
+                
+                // Also run on any mutations as a safety net
+                const observer = new MutationObserver(() => {
+                    fixPlaceholderOverlap();
+                });
+                observer.observe(editor, { attributes: true, childList: true, subtree: true, characterData: true });
 
                 //Set BlockSuite's internal theme
                 const setTheme = () => {

@@ -318,53 +318,14 @@
 /* Ensure the editor custom element and its host use the variables */
 .dark .blocksuite-editor-container page-editor {
     background-color: transparent !important;
-    color: #ECECEC !important;
+    color: var(--affine-text-primary-color) !important;
 }
 
-/* CRITICAL: Force all text-containing elements to be visible */
-.dark .blocksuite-editor-container *[contenteditable],
-.dark .blocksuite-editor-container .inline-editor,
-.dark .blocksuite-editor-container .affine-paragraph-block-container,
-.dark .blocksuite-editor-container .affine-block-children-container,
-.dark .blocksuite-editor-container .affine-note-block-container,
-.dark .blocksuite-editor-container [data-block-is-full-width="true"],
-.dark .blocksuite-editor-container rich-text,
-.dark .blocksuite-editor-container v-line,
-.dark .blocksuite-editor-container v-text,
-.dark .blocksuite-editor-container affine-paragraph,
-.dark .blocksuite-editor-container affine-list,
-.dark .blocksuite-editor-container [data-v-root="true"] {
-    color: #ECECEC !important;
+/* Dark mode text visibility via CSS variables (set above) */
+.dark .blocksuite-editor-container {
+    color: var(--affine-text-primary-color) !important;
 }
 
-/* Force inline editor text specifically */
-.dark .blocksuite-editor-container .inline-editor>* {
-    color: #ECECEC !important;
-}
-
-/* === PLACEHOLDER MANAGEMENT === */
-/* RULE: Show placeholder ONLY on completely empty elements */
-
-/* Default: HIDE all ::before pseudo elements (placeholders) */
-.blocksuite-editor-container *::before,
-.dark .blocksuite-editor-container *::before {
-    content: '' !important;
-    display: none !important;
-}
-
-/* ONLY show placeholder when element AND all children are empty */
-.blocksuite-editor-container v-text:empty::before,
-.dark .blocksuite-editor-container v-text:empty::before {
-    content: attr(data-placeholder) !important;
-    color: #999999 !important;
-    display: inline !important;
-    opacity: 0.6 !important;
-    pointer-events: none !important;
-}
-
-.dark .blocksuite-editor-container v-text:empty::before {
-    color: #666666 !important;
-}
 
 /* Adjust Editor Padding and Alignment */
 .blocksuite-editor-container {
