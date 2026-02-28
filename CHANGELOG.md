@@ -27,6 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Settings persisted in localStorage
 - **CHANGELOG.md** — Project changelog tracking all features, fixes, and changes
 
+### Fixed
+- Clicking on a line in the editor now correctly places the cursor at the clicked position
+
 ---
 
 ## [3.0.0] - 2026-02-08
