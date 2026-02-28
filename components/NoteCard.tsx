@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Note } from '../types';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pin } from 'lucide-react';
 
 interface NoteCardProps {
   note: Note;
   onDelete: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  isPinLimitReached: boolean;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onTogglePin, isPinLimitReached }) => {
   // Create a temporary element to parse the HTML content and extract text
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = note.content;
@@ -55,23 +57,57 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
     onDelete(note.id);
   };
 
+  const handleTogglePin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!note.pinned && isPinLimitReached) return;
+    onTogglePin(note.id);
+  };
+
+  const canPin = note.pinned || !isPinLimitReached;
+
   return (
     <Link to={`/edit/${note.id}`} className="block group">
-      <div className="bg-zero-surface dark:bg-zero-darkSurface rounded-xl shadow-[0px_2px_8px_0px_rgba(99,99,99,0.2)] hover:shadow-[0px_4px_16px_0px_rgba(99,99,99,0.2)] border border-transparent dark:border-neutral-800 transition-all duration-300 p-6 flex flex-col h-48 relative overflow-hidden hover:-translate-y-1">
+      <div className={`bg-zero-surface dark:bg-zero-darkSurface rounded-xl shadow-[0px_2px_8px_0px_rgba(99,99,99,0.2)] hover:shadow-[0px_4px_16px_0px_rgba(99,99,99,0.2)] border transition-all duration-300 p-6 flex flex-col h-48 relative overflow-hidden hover:-translate-y-1 ${note.pinned ? 'border-zero-accent/30 dark:border-zero-darkAccent/30' : 'border-transparent dark:border-neutral-800'}`}>
         
+        {/* Pin badge — always visible on pinned cards */}
+        {note.pinned && (
+          <div className="absolute top-2 left-2 z-10">
+            <Pin className="h-3.5 w-3.5 text-zero-accent dark:text-zero-darkAccent fill-current rotate-45" />
+          </div>
+        )}
+
         <div className="flex justify-between items-start mb-3">
-            <h3 className="text-lg font-semibold tracking-tight text-zero-text dark:text-zero-darkText line-clamp-1 pr-8">
+            <h3 className={`text-lg font-semibold tracking-tight text-zero-text dark:text-zero-darkText line-clamp-1 ${note.pinned ? 'pl-4' : ''} pr-16`}>
               {note.title || 'Untitled'}
             </h3>
             
-            {/* Delete button appears on hover */}
-            <button
-              onClick={handleDelete}
-              className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 z-10 w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-red-500 transition-all duration-200"
-              aria-label="Delete note"
-            >
-              <Trash2 className="h-4 w-4 stroke-[1.5]" />
-            </button>
+            <div className="absolute right-4 top-4 flex items-center gap-1">
+              {/* Pin button appears on hover */}
+              <button
+                onClick={handleTogglePin}
+                className={`opacity-0 group-hover:opacity-100 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${
+                  note.pinned
+                    ? 'text-zero-accent dark:text-zero-darkAccent hover:bg-gray-100 dark:hover:bg-neutral-800'
+                    : canPin 
+                      ? 'text-neutral-400 hover:text-zero-accent dark:hover:text-zero-darkAccent hover:bg-gray-100 dark:hover:bg-neutral-800'
+                      : 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+                }`}
+                aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
+                title={!canPin ? 'Maximum 4 notes can be pinned' : note.pinned ? 'Unpin' : 'Pin to top'}
+              >
+                <Pin className={`h-4 w-4 stroke-[1.5] ${note.pinned ? 'fill-current' : ''} rotate-45`} />
+              </button>
+              
+              {/* Delete button appears on hover */}
+              <button
+                onClick={handleDelete}
+                className="opacity-0 group-hover:opacity-100 z-10 w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-red-500 transition-all duration-200"
+                aria-label="Delete note"
+              >
+                <Trash2 className="h-4 w-4 stroke-[1.5]" />
+              </button>
+            </div>
         </div>
 
         <div className="flex-grow">

@@ -6,6 +6,9 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PlusIcon, NoteIcon, SearchIcon, SunIcon, MoonIcon } from '../components/Icons';
 import { deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 import { useTheme } from '../context/ThemeContext';
+import { Pin } from 'lucide-react';
+
+const MAX_PINNED = 4;
 
 const HomePage: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -86,6 +89,22 @@ const HomePage: React.FC = () => {
     openModal("Delete Note", message, () => executeDelete(id), true, "Delete");
   };
 
+  const handleTogglePin = (id: string) => {
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+
+    const pinnedCount = notes.filter(n => n.pinned).length;
+
+    // If trying to pin and already at max, do nothing
+    if (!note.pinned && pinnedCount >= MAX_PINNED) return;
+
+    const updatedNotes = notes.map(n =>
+      n.id === id ? { ...n, pinned: !n.pinned } : n
+    );
+    localStorage.setItem('notes', JSON.stringify(updatedNotes));
+    setNotes(updatedNotes);
+  };
+
   const filteredNotes = notes.filter(note => {
     const query = searchQuery.toLowerCase();
     const titleMatch = (note.title || '').toLowerCase().includes(query);
@@ -93,6 +112,10 @@ const HomePage: React.FC = () => {
     const contentMatch = (note.content || '').toLowerCase().includes(query);
     return titleMatch || contentMatch;
   });
+
+  const pinnedNotes = filteredNotes.filter(n => n.pinned);
+  const unpinnedNotes = filteredNotes.filter(n => !n.pinned);
+  const isPinLimitReached = notes.filter(n => n.pinned).length >= MAX_PINNED;
 
   return (
     <div className="animate-fade-in mt-6">
@@ -152,11 +175,42 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       ) : filteredNotes.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredNotes.map(note => (
-            <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} />
-          ))}
-        </div>
+        <>
+          {/* Pinned Section */}
+          {pinnedNotes.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Pin className="h-4 w-4 text-zero-accent dark:text-zero-darkAccent rotate-45" />
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-zero-accent dark:text-zero-darkAccent">
+                  Pinned
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {pinnedNotes.map(note => (
+                  <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} onTogglePin={handleTogglePin} isPinLimitReached={isPinLimitReached} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All Notes Section */}
+          {unpinnedNotes.length > 0 && (
+            <div>
+              {pinnedNotes.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-zero-secondaryText dark:text-zero-darkSecondaryText">
+                    All Notes
+                  </h2>
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {unpinnedNotes.map(note => (
+                  <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} onTogglePin={handleTogglePin} isPinLimitReached={isPinLimitReached} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-zero-secondaryText">
             <p className="text-sm">No results for "{searchQuery}"</p>
