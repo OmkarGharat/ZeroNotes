@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import type { Note } from '../types';
 import NoteCard from '../components/NoteCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import SettingsModal from '../components/SettingsModal';
 import { PlusIcon, NoteIcon, SearchIcon, SunIcon, MoonIcon } from '../components/Icons';
 import { deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 import { useTheme } from '../context/ThemeContext';
-import { Pin } from 'lucide-react';
+import { Pin, Settings } from 'lucide-react';
 
 const MAX_PINNED = 4;
 
@@ -14,6 +15,7 @@ const HomePage: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -162,6 +164,15 @@ const HomePage: React.FC = () => {
             >
                 {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
             </button>
+
+            <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 text-zero-secondaryText hover:text-zero-text dark:hover:text-zero-darkText transition-colors rounded-md hover:bg-zero-surface dark:hover:bg-neutral-800"
+                aria-label="Settings"
+                title="Settings"
+            >
+                <Settings className="w-5 h-5" />
+            </button>
         </div>
       </div>
 
@@ -226,6 +237,7 @@ const HomePage: React.FC = () => {
         confirmText={modalState.confirmText}
         cancelText={modalState.cancelText}
       />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };

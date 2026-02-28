@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 // @ts-ignore
 import TurndownService from 'turndown';
@@ -12,10 +12,12 @@ import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '.
 import { ArrowLeft, Download, Share2, Trash2 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import BlockSuiteEditor from '../components/BlockSuiteEditor';
+import { useSettings } from '../context/SettingsContext';
 
 const EditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { settings } = useSettings();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(''); // HTML for compatibility/sharing
@@ -24,6 +26,11 @@ const EditorPage: React.FC = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [notification, setNotification] = useState('');
   const [isLoading, setIsLoading] = useState(!!id);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
+  const currentIdRef = useRef(id);
   
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -76,6 +83,9 @@ const EditorPage: React.FC = () => {
       setCloudSlug(undefined);
       setIsLoading(false);
     }
+    // Mark initial load complete after a short delay to avoid triggering auto-save on open
+    const loadTimer = setTimeout(() => { isInitialLoadRef.current = false; }, 500);
+    return () => clearTimeout(loadTimer);
   }, [id]);
 
   // 3. Helper Functions
@@ -257,6 +267,52 @@ const EditorPage: React.FC = () => {
       setBlockSuiteData(snapshot);
   };
 
+  // --- Auto-Save Logic ---
+  useEffect(() => {
+    // Keep ref in sync
+    currentIdRef.current = id;
+  }, [id]);
+
+  useEffect(() => {
+    if (!settings.autoSave) return;
+    if (isInitialLoadRef.current) return;
+    if (isLoading) return;
+
+    // Clear previous timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      // Validate before auto-saving
+      if (!title.trim()) return;
+      
+      const checkContent = content?.replace(/<[^>]*>?/gm, '').trim();
+      if (!checkContent) return;
+
+      // Check for duplicate title
+      const allNotes: Note[] = JSON.parse(localStorage.getItem('notes') || '[]');
+      const normalized = title.trim().toLowerCase();
+      const hasDuplicate = allNotes.some(n => n.title.trim().toLowerCase() === normalized && n.id !== currentIdRef.current);
+      if (hasDuplicate) return;
+
+      // Perform save
+      setAutoSaveStatus('saving');
+      const savedNote = updateLocalStorage();
+      if (!currentIdRef.current && savedNote) {
+        navigate(`/edit/${savedNote.id}`);
+      }
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [title, content, blockSuiteData, settings.autoSave, isLoading]);
+
   return (
     <div className="flex flex-col h-full mt-12 max-w-4xl mx-auto w-full">
       <ConfirmationModal 
@@ -323,7 +379,7 @@ const EditorPage: React.FC = () => {
                 <Trash2 className="h-5 w-5 stroke-[1.5]" />
             </button>
             <button onClick={handleSave} className="ml-4 bg-zero-accent dark:bg-zero-darkAccent text-white dark:text-black font-medium text-xs uppercase tracking-widest py-2 px-5 rounded-md hover:opacity-90 transition-all shadow-sm">
-              Save
+              {settings.autoSave && autoSaveStatus === 'saved' ? 'Saved ✓' : 'Save'}
             </button>
         </div>
       </div>

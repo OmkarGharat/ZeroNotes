@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import EditorPage from './pages/EditorPage';
 import SharePage from './pages/SharePage';
 import { ThemeProvider } from './context/ThemeContext';
+import { SettingsProvider } from './context/SettingsContext';
 import BetaBanner from './components/BetaBanner';
 
 function AppContent() {
@@ -41,11 +42,13 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <HashRouter>
-        <AppContent />
-      </HashRouter>
-    </ThemeProvider>
+    <SettingsProvider>
+      <ThemeProvider>
+        <HashRouter>
+          <AppContent />
+        </HashRouter>
+      </ThemeProvider>
+    </SettingsProvider>
   );
 }
 
