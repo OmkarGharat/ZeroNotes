@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import EditorPage from './pages/EditorPage';
 import SharePage from './pages/SharePage';
 import { ThemeProvider } from './context/ThemeContext';
+import BetaBanner from './components/BetaBanner';
 
 function AppContent() {
   const location = useLocation();
@@ -31,6 +32,9 @@ function AppContent() {
             </p>
         </footer>
       )}
+
+      {/* Beta/evolving notice banner */}
+      <BetaBanner />
     </div>
   );
 }
