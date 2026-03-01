@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Note } from '../types';
 import NoteCard from '../components/NoteCard';
+import type { ViewMode } from '../components/NoteCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import SettingsModal from '../components/SettingsModal';
 import { PlusIcon, NoteIcon, SearchIcon, SunIcon, MoonIcon } from '../components/Icons';
 import { deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
 import { useTheme } from '../context/ThemeContext';
-import { Pin, Settings } from 'lucide-react';
+import { Pin, Settings, LayoutGrid, List } from 'lucide-react';
 
 const MAX_PINNED = 4;
 
@@ -16,6 +17,15 @@ const HomePage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (localStorage.getItem('zeronotes-view-mode') as ViewMode) || 'grid';
+  });
+
+  const toggleViewMode = () => {
+    const next = viewMode === 'grid' ? 'list' : 'grid';
+    setViewMode(next);
+    localStorage.setItem('zeronotes-view-mode', next);
+  };
 
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -155,6 +165,15 @@ const HomePage: React.FC = () => {
                 <PlusIcon className="h-4 w-4" />
                 New Note
             </Link>
+
+            <button 
+                onClick={toggleViewMode}
+                className="p-2 text-zero-secondaryText hover:text-zero-text dark:hover:text-zero-darkText transition-colors rounded-md hover:bg-zero-surface dark:hover:bg-neutral-800"
+                aria-label={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
+                title={viewMode === 'grid' ? 'List view' : 'Grid view'}
+            >
+                {viewMode === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+            </button>
             
             <button 
                 onClick={toggleTheme}
@@ -196,9 +215,9 @@ const HomePage: React.FC = () => {
                   Pinned
                 </h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-1'}>
                 {pinnedNotes.map(note => (
-                  <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} onTogglePin={handleTogglePin} isPinLimitReached={isPinLimitReached} />
+                  <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} onTogglePin={handleTogglePin} isPinLimitReached={isPinLimitReached} viewMode={viewMode} />
                 ))}
               </div>
             </div>
@@ -214,9 +233,9 @@ const HomePage: React.FC = () => {
                   </h2>
                 </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-1'}>
                 {unpinnedNotes.map(note => (
-                  <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} onTogglePin={handleTogglePin} isPinLimitReached={isPinLimitReached} />
+                  <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} onTogglePin={handleTogglePin} isPinLimitReached={isPinLimitReached} viewMode={viewMode} />
                 ))}
               </div>
             </div>

@@ -29,10 +29,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Clicking on a line in the editor now correctly places the cursor at the clicked position
+
+### Added (continued)
 - **✨ AI Format** — One-click note formatting powered by Gemini API
   - Adds proper headings, bullet lists, code blocks, and links
   - Requires a free Gemini API key (configurable in Settings)
   - Loading spinner and error handling for API calls
+- **Grid / List View Toggle** — Switch between card grid and compact list layout
+  - Toggle button next to "+ New Note" in the header
+  - View preference persists across sessions
 
 ---
 
