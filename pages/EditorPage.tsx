@@ -9,7 +9,8 @@ import hljs from 'highlight.js'; // Might be needed for static html rendering if
 import type { Note } from '../types';
 
 import { publishNoteToCloud, deleteNoteFromCloud, isFirebaseConfigured } from '../services/firebaseService';
-import { ArrowLeft, Download, Share2, Trash2 } from 'lucide-react';
+import { formatNoteWithGemini } from '../services/geminiFormat';
+import { ArrowLeft, Download, Share2, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import BlockSuiteEditor from '../components/BlockSuiteEditor';
 import { useSettings } from '../context/SettingsContext';
@@ -27,6 +28,8 @@ const EditorPage: React.FC = () => {
   const [notification, setNotification] = useState('');
   const [isLoading, setIsLoading] = useState(!!id);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isFormatting, setIsFormatting] = useState(false);
+  const [formatKey, setFormatKey] = useState(0);
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -267,6 +270,39 @@ const EditorPage: React.FC = () => {
       setBlockSuiteData(snapshot);
   };
 
+  // --- Format with Gemini ---
+  const handleFormat = async () => {
+    if (!settings.geminiApiKey) {
+      showNotification('Add a Gemini API key in Settings to use Format');
+      return;
+    }
+    if (!content?.trim()) {
+      showNotification('Nothing to format');
+      return;
+    }
+
+    setIsFormatting(true);
+    try {
+      // Extract plain text from HTML content
+      const temp = document.createElement('div');
+      temp.innerHTML = content;
+      const plainText = temp.textContent || temp.innerText || '';
+
+      const formattedHtml = await formatNoteWithGemini(plainText, settings.geminiApiKey);
+      
+      // Update content and force editor to re-render with formatted HTML
+      setContent(formattedHtml);
+      setBlockSuiteData(undefined); // Clear snapshot so editor uses HTML
+      setFormatKey(prev => prev + 1); // Force editor remount
+      
+      showNotification('Formatted ✨');
+    } catch (err: any) {
+      showNotification(err.message || 'Format failed');
+    } finally {
+      setIsFormatting(false);
+    }
+  };
+
   // --- Auto-Save Logic ---
   useEffect(() => {
     // Keep ref in sync
@@ -381,13 +417,30 @@ const EditorPage: React.FC = () => {
             <button onClick={handleSave} className="ml-4 bg-zero-accent dark:bg-zero-darkAccent text-white dark:text-black font-medium text-xs uppercase tracking-widest py-2 px-5 rounded-md hover:opacity-90 transition-all shadow-sm">
               {settings.autoSave && autoSaveStatus === 'saved' ? 'Saved ✓' : 'Save'}
             </button>
+            <button 
+                onClick={handleFormat}
+                disabled={isFormatting || !settings.geminiApiKey}
+                className={`ml-2 flex items-center gap-1.5 font-medium text-xs uppercase tracking-widest py-2 px-4 rounded-md transition-all shadow-sm ${
+                  settings.geminiApiKey
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'bg-gray-300 dark:bg-neutral-700 text-gray-500 dark:text-neutral-400 cursor-not-allowed'
+                }`}
+                title={settings.geminiApiKey ? 'Format note with AI' : 'Add Gemini API key in Settings to use Format'}
+            >
+                {isFormatting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {isFormatting ? 'Formatting...' : 'Format'}
+            </button>
         </div>
       </div>
 
       <div className="flex-grow h-[calc(100vh-200px)] rounded-lg overflow-hidden relative bg-white dark:bg-neutral-900">
         {!isLoading ? (
           <BlockSuiteEditor 
-              key={id || 'new'}
+              key={`${id || 'new'}-${formatKey}`}
               initialContentHtml={content} 
               initialSnapshot={blockSuiteData} 
               onChange={handleEditorChange} 

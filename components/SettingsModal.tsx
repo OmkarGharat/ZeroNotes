@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { X, HardDrive, Github, Gitlab, Cloud } from 'lucide-react';
+import { X, HardDrive, Github, Gitlab, Cloud, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { settings, updateSettings } = useSettings();
+  const [showApiKey, setShowApiKey] = useState(false);
 
   if (!isOpen) return null;
 
@@ -65,6 +66,46 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 }`}
               />
             </button>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-100 dark:border-neutral-800" />
+
+          {/* Gemini API Key */}
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles className="h-4 w-4 text-zero-accent dark:text-zero-darkAccent" />
+              <h3 className="text-sm font-medium text-zero-text dark:text-zero-darkText">
+                Gemini API Key
+              </h3>
+            </div>
+            <p className="text-xs text-zero-secondaryText dark:text-zero-darkSecondaryText mb-2 leading-relaxed">
+              Powers the ✨ Format feature. Get a free key from{' '}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zero-accent dark:text-zero-darkAccent hover:underline"
+              >
+                Google AI Studio
+              </a>
+            </p>
+            <div className="relative">
+              <input
+                type={showApiKey ? 'text' : 'password'}
+                value={settings.geminiApiKey}
+                onChange={(e) => updateSettings({ geminiApiKey: e.target.value })}
+                placeholder="AIza..."
+                className="w-full pr-10 pl-3 py-2 bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm text-zero-text dark:text-zero-darkText placeholder-gray-400 dark:placeholder-neutral-500 focus:outline-none focus:border-zero-accent dark:focus:border-zero-darkAccent transition-colors"
+              />
+              <button
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-zero-text dark:hover:text-zero-darkText transition-colors"
+                aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+              >
+                {showApiKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+            </div>
           </div>
 
           {/* Divider */}
